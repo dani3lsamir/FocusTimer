@@ -13,6 +13,7 @@ internal static class Program
         using var mutex = new Mutex(initiallyOwned: true, @"Local\FocusTimer.SingleInstance", out bool isFirst);
         if (!isFirst)
         {
+            Win32.AllowSetForegroundWindow(-1); // ASFW_ANY: deja que la instancia abierta pase al frente
             Win32.PostMessage(Win32.HWND_BROADCAST, MainForm.ShowMessage, 0, 0);
             return;
         }

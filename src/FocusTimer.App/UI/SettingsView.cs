@@ -83,6 +83,7 @@ internal sealed class SettingsView : UserControl
             var l = Theme.Label(label, Theme.Normal, Theme.Muted);
             l.Anchor = AnchorStyles.Left;
             l.Margin = new Padding(0, 4, 0, 4);
+            l.MaximumSize = new Size(250, 0);
             c.Anchor = AnchorStyles.Left | AnchorStyles.Right;
             c.Margin = new Padding(0, 3, 0, 3);
             root.Controls.Add(l);

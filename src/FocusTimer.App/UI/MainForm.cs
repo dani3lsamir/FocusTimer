@@ -152,7 +152,14 @@ internal sealed class MainForm : Form
         base.OnShown(e);
         _taskbar.Init();
         RefreshTimer();
+        RefreshStats(); // alturas de los paneles pintados ya con el DPI real
         AcceptButton = _timerView.StartButton;
+    }
+
+    protected override void OnDpiChanged(DpiChangedEventArgs e)
+    {
+        base.OnDpiChanged(e);
+        BeginInvoke(RefreshStats);
     }
 
     protected override void OnActivated(EventArgs e)
@@ -297,7 +304,7 @@ internal sealed class MainForm : Form
         _timerView.Goals.SetData(day, _settings.DailyGoalPomodoros, streak, week, _settings);
         if (_dashboardHost.Visible)
         {
-            _dashboard.Width = _dashboardHost.ClientSize.Width;
+            _dashboard.Width = _dashboardHost.ClientSize.Width - (_dashboardHost.VerticalScroll.Visible ? 0 : SystemInformation.VerticalScrollBarWidth);
             _dashboard.SetData(_records, _settings, today);
         }
     }

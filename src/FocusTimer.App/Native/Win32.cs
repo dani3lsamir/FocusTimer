@@ -36,6 +36,10 @@ internal static partial class Win32
 
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool AllowSetForegroundWindow(int processId);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool MessageBeep(uint type);
 
     [LibraryImport("shell32.dll", StringMarshalling = StringMarshalling.Utf16)]
