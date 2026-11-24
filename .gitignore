@@ -1,0 +1,19 @@
+# --- Build output ---
+bin/
+obj/
+publish/
+artifacts/
+*.user
+*.suo
+.vs/
+.vscode/
+.idea/
+TestResults/
+
+# --- User data: NEVER commit ---
+*.csv
+settings.json
+settings.json.*
+current.json
+*.bak
+*.bad

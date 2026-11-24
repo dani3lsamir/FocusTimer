@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/FocusTimer.Core/FocusTimer.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/FocusTimer.Tests/FocusTimer.Tests.csproj" />
+  </Folder>
+</Solution>
