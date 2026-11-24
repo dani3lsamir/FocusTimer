@@ -15,11 +15,13 @@ internal sealed class MainForm : Form
     private readonly CheckpointStore _checkpoint;
     private readonly AppSettings _settings;
     private readonly PomodoroEngine _engine = new(SystemClock.Instance);
+    private readonly CountdownBoard _board = new(SystemClock.Instance);
     private readonly List<SessionRecord> _records;
     private readonly TaskbarProgress _taskbar = new();
     private readonly System.Windows.Forms.Timer _timer = new();
 
     private readonly TimerView _timerView = new();
+    private readonly TimersView _timersView;
     private readonly DashboardView _dashboard = new();
     private readonly Panel _dashboardHost;
     private readonly SettingsView _settingsView;
@@ -44,6 +46,7 @@ internal sealed class MainForm : Form
         _engine.Durations = _settings.ToDurations();
         _engine.SessionFinished += OnSessionFinished;
         _engine.PhaseCompleted += OnPhaseCompleted;
+        _board.Finished += OnCountdownFinished;
 
         // --- Ventana ---
         Text = "FocusTimer";
@@ -63,15 +66,18 @@ internal sealed class MainForm : Form
         _dashboard.Anchor = AnchorStyles.Left | AnchorStyles.Top | AnchorStyles.Right;
         _dashboardHost.Controls.Add(_dashboard);
         _settingsView = new SettingsView(_settings, paths.Root);
-        _pages = [_timerView, _dashboardHost, _settingsView];
+        _timersView = new TimersView(_board, _settings);
+        _timersView.PresetsChanged += (_, _) => SaveSettings();
+        _timersView.BoardChanged += (_, _) => RefreshTimer();
+        _pages = [_timerView, _timersView, _dashboardHost, _settingsView];
         foreach (var p in _pages) { p.Dock = DockStyle.Fill; p.Visible = false; }
 
-        _tabs = [new NavTab("Temporizador"), new NavTab("Panel"), new NavTab("Ajustes")];
-        var nav = new TableLayoutPanel { Dock = DockStyle.Top, Height = 40, ColumnCount = 3, BackColor = Theme.Back, Margin = new Padding(0) };
-        for (int i = 0; i < 3; i++)
+        _tabs = [new NavTab("Pomodoro"), new NavTab("Timers"), new NavTab("Panel"), new NavTab("Ajustes")];
+        var nav = new TableLayoutPanel { Dock = DockStyle.Top, Height = 40, ColumnCount = _tabs.Length, BackColor = Theme.Back, Margin = new Padding(0) };
+        for (int i = 0; i < _tabs.Length; i++)
         {
             int index = i;
-            nav.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
+            nav.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f / _tabs.Length));
             _tabs[i].Dock = DockStyle.Fill;
             _tabs[i].Margin = new Padding(0);
             _tabs[i].Click += (_, _) => ShowPage(index);
@@ -170,9 +176,16 @@ internal sealed class MainForm : Form
 
     protected override void OnFormClosing(FormClosingEventArgs e)
     {
-        if (_engine.Phase == Phase.Focus && e.CloseReason == CloseReason.UserClosing)
+        bool focus = _engine.Phase == Phase.Focus, timers = _board.AnyActive;
+        if ((focus || timers) && e.CloseReason == CloseReason.UserClosing)
         {
-            var answer = MessageBox.Show(this, "Hay un pomodoro en curso. ¿Cerrar y guardarlo como incompleto?",
+            string question = (focus, timers) switch
+            {
+                (true, true) => "Hay un pomodoro y timers en curso. ¿Cerrar? El pomodoro se guarda como incompleto y los timers se pierden.",
+                (true, false) => "Hay un pomodoro en curso. ¿Cerrar y guardarlo como incompleto?",
+                _ => "Hay timers en curso y se perderán. ¿Cerrar?",
+            };
+            var answer = MessageBox.Show(this, question,
                 "FocusTimer", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
             if (answer != DialogResult.Yes) { e.Cancel = true; return; }
         }
@@ -224,6 +237,8 @@ internal sealed class MainForm : Form
     private void OnTick()
     {
         _engine.Tick();
+        _board.Tick();
+        if (_timersView.Visible) _timersView.UpdateRows();
         RefreshTimer();
         var now = DateTime.Now;
         if (_engine.Phase == Phase.Focus && now - _lastCheckpoint >= CheckpointEvery) SaveCheckpoint();
@@ -264,6 +279,12 @@ internal sealed class MainForm : Form
         Notify(title, body);
     }
 
+    private void OnCountdownFinished(Countdown c)
+    {
+        _timersView.RebuildRows();
+        Notify($"⏰ {c.Label} – terminado", $"Timer de {DurationText.Format(c.Duration)} cumplido.");
+    }
+
     private void Notify(string title, string body)
     {
         if (Form.ActiveForm != this) Win32.FlashUntilFocused(Handle);
@@ -290,7 +311,8 @@ internal sealed class MainForm : Form
             _tabs[i].SetSelected(i == index);
         }
         AcceptButton = index == 0 ? _timerView.StartButton : null;
-        if (index == 1) RefreshStats();
+        if (_pages[index] == _dashboardHost) RefreshStats();
+        if (_pages[index] == _timersView) _timersView.RebuildRows();
     }
 
     private void RefreshStats()
@@ -312,16 +334,24 @@ internal sealed class MainForm : Form
     private void RefreshTimer()
     {
         _timerView.UpdateState(_engine, TimeSpan.FromMinutes(_settings.FocusMinutes));
-        _timer.Interval = _engine.Phase == Phase.Idle ? 30_000 : 500;
+        int interval = _engine.Phase == Phase.Idle && !_board.AnyRunning ? 30_000 : 500;
+        if (_timer.Interval != interval) _timer.Interval = interval;
         if (!_timer.Enabled) _timer.Start();
 
-        string title = "FocusTimer";
+        // Título (se ve al pasar el ratón por el botón de la barra de tareas).
+        var parts = new List<string>();
         if (_engine.Phase != Phase.Idle)
         {
             int min = (int)Math.Ceiling(_engine.Remaining.TotalMinutes);
             string what = _engine.IsPaused ? "en pausa" : _engine.Phase == Phase.Focus ? "enfoque" : "descanso";
-            title = $"{min} min · {what} – FocusTimer";
+            parts.Add($"{min} min · {what}");
         }
+        if (_board.NextDue() is { } next)
+        {
+            int others = _board.Items.Count(c => c.State == CountdownState.Running) - 1;
+            parts.Add($"{next.Label} {DurationText.Clock(_board.Remaining(next))}" + (others > 0 ? $" (+{others})" : ""));
+        }
+        string title = parts.Count == 0 ? "FocusTimer" : string.Join("  |  ", parts) + " – FocusTimer";
         if (Text != title) Text = title;
         UpdateTaskbar();
     }
@@ -329,6 +359,12 @@ internal sealed class MainForm : Form
     private void UpdateTaskbar()
     {
         if (!IsHandleCreated) return;
+        // El Pomodoro tiene prioridad; si no hay, se muestra el timer que termina antes.
+        if (_engine.Phase == Phase.Idle && _board.NextDue() is { } next)
+        {
+            _taskbar.Set(Handle, TaskbarState.Focus, _board.Fraction(next));
+            return;
+        }
         var state = _engine.Phase == Phase.Idle ? TaskbarState.None
             : _engine.IsPaused ? TaskbarState.Paused
             : _engine.IsBreak ? TaskbarState.Break

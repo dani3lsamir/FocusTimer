@@ -16,6 +16,12 @@ Pequeño, **100 % sin conexión** y con muy poca memoria. Hecho en C# + .NET 10 
 - **Barra de tareas**: la barra de progreso del botón muestra el tiempo restante.
   Es **verde** en enfoque, **amarilla** en descanso y **roja** en pausa (Windows solo ofrece esos tres colores).
   El título de la ventana muestra los minutos restantes, así que los ves al pasar el ratón.
+- **Timers** (pestaña aparte, para cocinar o cualquier cosa): varios a la vez (hasta 10), cada uno con su nombre.
+  - Rápidos de **3, 5 y 10 min**.
+  - **Timers guardados** con nombre, como «Huevo · 6:30»: un clic los inicia y clic derecho los edita o elimina.
+  - La duración se escribe libremente: `10` (min), `6:30`, `6.5`, `1:15:00`, `90s` o `2h`.
+  - Se pueden pausar y quitar. Al terminar avisan igual que el Pomodoro: notificación y parpadeo.
+  - **No se registran** en `sessions.csv` ni cuentan para metas. Si cierras la app con timers corriendo, te lo pregunta antes.
 - **Metas**: meta diaria de pomodoros (por defecto 8) y metas semanales opcionales en minutos por categoría.
 - **Panel**: resumen de hoy (minutos, pomodoros frente a la meta, desglose por categoría), gráfico semanal apilado por categoría,
   metas semanales y **racha** de días cumpliendo la meta diaria.
@@ -88,7 +94,7 @@ Todo vive en **`%LOCALAPPDATA%\FocusTimer\`** (botón *Abrir carpeta de datos* e
 | Archivo | Contenido |
 |---|---|
 | `sessions.csv` | Tus sesiones. **Es la exportación**: se abre en Excel o LibreOffice. |
-| `settings.json` | Ajustes, categorías, metas y tareas recientes. |
+| `settings.json` | Ajustes, categorías, metas, tareas recientes y timers guardados. |
 | `current.json` | Pomodoro en curso (se guarda cada 30 s). Sirve para recuperarlo si la app o el PC se cierran de golpe. |
 | `sessions.pending.csv` | Solo aparece si `sessions.csv` estaba bloqueado (p. ej. abierto en Excel). Se fusiona solo. |
 | `icon.png`, `error.log` | Icono para las notificaciones y registro local de errores inesperados. |
@@ -159,7 +165,7 @@ Los tests usan Microsoft.Testing.Platform (configurado en `global.json`).
 
 ## Ideas futuras (no incluidas en v1)
 
-Atajos de teclado globales, icono en la bandeja, detección de inactividad, editar sesiones a mano, notas por sesión,
+Timers que sobrevivan a cerrar la app, atajos de teclado globales, icono en la bandeja, detección de inactividad, editar sesiones a mano, notas por sesión,
 relojes mundiales (Bolivia/China), informes de largo plazo y una interfaz para Linux sobre `FocusTimer.Core`.
 
 ## Licencia
