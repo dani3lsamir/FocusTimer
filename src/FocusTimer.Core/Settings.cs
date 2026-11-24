@@ -17,6 +17,7 @@ public sealed class CategoryDef
 public sealed class AppSettings
 {
     public const int MaxRecentTasks = 10;
+    public const int MaxTimerPresets = 20;
 
     public int SchemaVersion { get; set; } = 1;
     public int FocusMinutes { get; set; } = 25;
@@ -28,6 +29,8 @@ public sealed class AppSettings
     public string? LastCategoryId { get; set; }
     public string LastTask { get; set; } = "";
     public List<string> RecentTasks { get; set; } = [];
+    /// <summary>Timers guardados (nombre + duración). Vacío por defecto.</summary>
+    public List<TimerPreset> TimerPresets { get; set; } = [];
     public int? WindowX { get; set; }
     public int? WindowY { get; set; }
 
@@ -65,6 +68,27 @@ public sealed class AppSettings
         LastTask ??= "";
         RecentTasks = (RecentTasks ?? []).Where(t => !string.IsNullOrWhiteSpace(t))
             .Distinct(StringComparer.OrdinalIgnoreCase).Take(MaxRecentTasks).ToList();
+        TimerPresets = (TimerPresets ?? []).Where(p => p is not null && !string.IsNullOrWhiteSpace(p.Name)).Take(MaxTimerPresets).ToList();
+        foreach (var p in TimerPresets)
+        {
+            p.Name = p.Name.Trim();
+            if (p.Name.Length > 30) p.Name = p.Name[..30];
+            p.Seconds = Math.Clamp(p.Seconds, (int)DurationText.Min.TotalSeconds, (int)DurationText.Max.TotalSeconds);
+        }
+    }
+
+    /// <summary>Guarda (o actualiza, si el nombre ya existe) un timer. Devuelve un error en español o null.</summary>
+    public string? SaveTimerPreset(string name, TimeSpan duration)
+    {
+        name = (name ?? "").Trim();
+        if (name.Length == 0) return "Ponle un nombre para guardarlo.";
+        if (name.Length > 30) return "Nombre: máximo 30 caracteres.";
+        if (duration < DurationText.Min || duration > DurationText.Max) return "Duración entre 1 segundo y 24 horas.";
+        var existing = TimerPresets.FirstOrDefault(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase));
+        if (existing is not null) { existing.Seconds = (int)duration.TotalSeconds; return null; }
+        if (TimerPresets.Count >= MaxTimerPresets) return $"Máximo {MaxTimerPresets} timers guardados.";
+        TimerPresets.Add(new TimerPreset { Name = name, Seconds = (int)duration.TotalSeconds });
+        return null;
     }
 
     internal static string Categories_NewId() => "c" + Guid.NewGuid().ToString("N")[..8];
