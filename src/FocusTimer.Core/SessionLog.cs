@@ -47,9 +47,11 @@ public sealed class SessionLog(SessionStore main, SessionStore pending)
     }
 
     /// <summary>Todas las sesiones: principal + pendientes que aún no están en el principal.</summary>
-    public List<SessionRecord> ReadAll()
+    public List<SessionRecord> ReadAll() => ReadAll(out _);
+
+    public List<SessionRecord> ReadAll(out int skippedRows)
     {
-        var all = Main.ReadAll();
+        var all = Main.ReadAll(out skippedRows);
         if (HasPending)
         {
             var ids = all.Select(r => r.Id).ToHashSet();
