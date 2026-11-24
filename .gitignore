@@ -17,3 +17,4 @@ settings.json.*
 current.json
 *.bak
 *.bad
+*.log
