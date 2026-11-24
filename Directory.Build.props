@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Deterministic>true</Deterministic>
+    <DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>
     <Version>1.0.0</Version>
     <Product>FocusTimer</Product>
     <Copyright>Copyright (c) 2026 dani3lsamir. MIT License.</Copyright>
