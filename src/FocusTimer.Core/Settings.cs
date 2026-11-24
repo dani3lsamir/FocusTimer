@@ -36,8 +36,8 @@ public sealed class AppSettings
 
     public static List<CategoryDef> DefaultCategories() =>
     [
-        new() { Id = "trabajo", Name = "Trabajo" },
-        new() { Id = "estudio", Name = "Estudio" },
+        new() { Id = "work", Name = "Work" },
+        new() { Id = "study", Name = "Study" },
         new() { Id = "personal", Name = "Personal" },
     ];
 
@@ -81,12 +81,12 @@ public sealed class AppSettings
     public string? SaveTimerPreset(string name, TimeSpan duration)
     {
         name = (name ?? "").Trim();
-        if (name.Length == 0) return "Ponle un nombre para guardarlo.";
-        if (name.Length > 30) return "Nombre: máximo 30 caracteres.";
-        if (duration < DurationText.Min || duration > DurationText.Max) return "Duración entre 1 segundo y 24 horas.";
+        if (name.Length == 0) return "Give it a name to save it.";
+        if (name.Length > 30) return "Name: 30 characters max.";
+        if (duration < DurationText.Min || duration > DurationText.Max) return "Duration must be between 1 second and 24 hours.";
         var existing = TimerPresets.FirstOrDefault(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase));
         if (existing is not null) { existing.Seconds = (int)duration.TotalSeconds; return null; }
-        if (TimerPresets.Count >= MaxTimerPresets) return $"Máximo {MaxTimerPresets} timers guardados.";
+        if (TimerPresets.Count >= MaxTimerPresets) return $"Up to {MaxTimerPresets} saved timers.";
         TimerPresets.Add(new TimerPreset { Name = name, Seconds = (int)duration.TotalSeconds });
         return null;
     }

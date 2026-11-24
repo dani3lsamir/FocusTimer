@@ -50,29 +50,29 @@ internal sealed class TimersView : UserControl
             AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, WrapContents = true,
             Dock = DockStyle.Top, Margin = new Padding(0), BackColor = Theme.Back,
         };
-        _presetsHint = Theme.Label("Aún no hay timers guardados. Crea uno abajo y pulsa Guardar.", Theme.Small);
+        _presetsHint = Theme.Label("No saved timers yet. Create one below and press Save.", Theme.Small);
         _presetsHint.MaximumSize = new Size(348, 0);
 
         // Nuevo
-        _name = new TextBox { MaxLength = 30, PlaceholderText = "Nombre (opcional): Huevo", Dock = DockStyle.Fill, Margin = new Padding(0, 4, 6, 4) };
-        _duration = new TextBox { MaxLength = 10, PlaceholderText = "10 o 6:30", Dock = DockStyle.Fill, Margin = new Padding(0, 4, 0, 4), TextAlign = HorizontalAlignment.Center };
+        _name = new TextBox { MaxLength = 30, PlaceholderText = "Name (optional): Eggs", Dock = DockStyle.Fill, Margin = new Padding(0, 4, 6, 4) };
+        _duration = new TextBox { MaxLength = 10, PlaceholderText = "10 or 6:30", Dock = DockStyle.Fill, Margin = new Padding(0, 4, 0, 4), TextAlign = HorizontalAlignment.Center };
         Theme.StyleInput(_name);
         Theme.StyleInput(_duration);
-        _tips.SetToolTip(_duration, "Minutos (10, 6.5), m:ss (6:30), h:mm:ss, o con unidad: 90s, 2h");
+        _tips.SetToolTip(_duration, "Minutes (10, 6.5), m:ss (6:30), h:mm:ss, or with a unit: 90s, 2h");
         var inputs = new TableLayoutPanel { ColumnCount = 2, Height = 34, Dock = DockStyle.Top, Margin = new Padding(0), BackColor = Theme.Back };
         inputs.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 65));
         inputs.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35));
         inputs.Controls.Add(_name, 0, 0);
         inputs.Controls.Add(_duration, 1, 0);
 
-        var start = Theme.Button("Iniciar", primary: true);
-        var save = Theme.Button("Guardar");
+        var start = Theme.Button("Start", primary: true);
+        var save = Theme.Button("Save");
         var actions = new TableLayoutPanel { ColumnCount = 2, Height = 48, Dock = DockStyle.Top, Margin = new Padding(0), BackColor = Theme.Back };
         actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 65));
         actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35));
         start.Dock = DockStyle.Fill; start.Margin = new Padding(0, 4, 6, 4);
         save.Dock = DockStyle.Fill; save.Margin = new Padding(0, 4, 0, 4);
-        _tips.SetToolTip(save, "Guarda este timer arriba para iniciarlo con un clic");
+        _tips.SetToolTip(save, "Saves this timer above so you can start it with one click");
         start.Click += (_, _) => StartFromInputs();
         save.Click += (_, _) => SavePreset();
         actions.Controls.Add(start, 0, 0);
@@ -90,7 +90,7 @@ internal sealed class TimersView : UserControl
             Dock = DockStyle.Fill, Margin = new Padding(0), BackColor = Theme.Back,
         };
         _running.SizeChanged += (_, _) => FitRows();
-        _empty = Theme.Label("Ningún timer corriendo.", Theme.Normal);
+        _empty = Theme.Label("No timers running.", Theme.Normal);
 
         var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, BackColor = Theme.Back };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
@@ -101,16 +101,16 @@ internal sealed class TimersView : UserControl
             else c.Anchor = AnchorStyles.Left | AnchorStyles.Right;
             layout.Controls.Add(c);
         }
-        Row(Theme.Label("Rápidos"));
+        Row(Theme.Label("Quick"));
         Row(quick);
-        Row(Theme.Label("Guardados  ·  clic para iniciar, clic derecho para eliminar"));
+        Row(Theme.Label("Saved  ·  click to start, right-click to edit or delete"));
         Row(_presets);
         Row(_presetsHint);
-        Row(Theme.Label("Nuevo"));
+        Row(Theme.Label("New"));
         Row(inputs);
         Row(actions);
         Row(_error);
-        Row(Theme.Label("En curso"));
+        Row(Theme.Label("Running"));
         Row(_empty);
         _running.Dock = DockStyle.Fill;
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
@@ -137,12 +137,12 @@ internal sealed class TimersView : UserControl
             b.Margin = new Padding(0, 2, 6, 2);
             b.Click += (_, _) => StartTimer(preset.Name, TimeSpan.FromSeconds(preset.Seconds));
             var menu = new ContextMenuStrip { ShowImageMargin = false, BackColor = Theme.Surface, ForeColor = Theme.Text };
-            menu.Items.Add("Editar abajo", null, (_, _) =>
+            menu.Items.Add("Edit below", null, (_, _) =>
             {
                 _name.Text = preset.Name;
                 _duration.Text = DurationText.Format(TimeSpan.FromSeconds(preset.Seconds)).Replace(" min", "");
             });
-            menu.Items.Add($"Eliminar «{preset.Name}»", null, (_, _) =>
+            menu.Items.Add($"Delete \"{preset.Name}\"", null, (_, _) =>
             {
                 _s.TimerPresets.Remove(preset);
                 PresetsChanged?.Invoke(this, EventArgs.Empty);
@@ -179,8 +179,8 @@ internal sealed class TimersView : UserControl
     {
         if (DurationText.TryParse(_duration.Text, out d)) return true;
         _error.Text = _duration.Text.Trim().Length == 0
-            ? "Escribe la duración: 10 (min), 6:30, 90s..."
-            : "Duración no válida. Ejemplos: 10, 6:30, 1:15:00, 90s (máx. 24 h).";
+            ? "Type a duration: 10 (min), 6:30, 90s..."
+            : "Invalid duration. Examples: 10, 6:30, 1:15:00, 90s (max 24 h).";
         _duration.Focus();
         return false;
     }
@@ -189,7 +189,7 @@ internal sealed class TimersView : UserControl
     {
         if (_board.Start(name, d) is null)
         {
-            _error.Text = $"Máximo {CountdownBoard.MaxTimers} timers a la vez. Quita alguno terminado.";
+            _error.Text = $"Up to {CountdownBoard.MaxTimers} timers at once. Remove a finished one.";
             return false;
         }
         _error.Text = "";
@@ -279,7 +279,7 @@ internal sealed class TimerRow : UserControl
 
         _name = new Label { Text = c.Label, AutoSize = false, AutoEllipsis = true, Font = Theme.Normal, ForeColor = Theme.Text, Location = new Point(10, 6), Height = 20 };
         _time = new Label { AutoSize = false, Font = Theme.Heading, ForeColor = Theme.Text, Location = new Point(10, 26), Size = new Size(110, 24), TextAlign = ContentAlignment.MiddleLeft };
-        _pause = Theme.Button("Pausar");
+        _pause = Theme.Button("Pause");
         _remove = Theme.Button("✕");
         _pause.Size = new Size(82, 30);
         _remove.Size = new Size(34, 30);
@@ -304,12 +304,12 @@ internal sealed class TimerRow : UserControl
     {
         bool finished = _c.State == CountdownState.Finished;
         bool paused = _c.State == CountdownState.Paused;
-        string time = finished ? "¡Terminado!" : DurationText.Clock(remaining) + (paused ? "  en pausa" : "");
+        string time = finished ? "Done!" : DurationText.Clock(remaining) + (paused ? "  paused" : "");
         if (_time.Text != time) _time.Text = time;
         _time.Width = Math.Max(110, _pause.Left - 16);
         _time.ForeColor = finished ? Theme.Accent : paused ? Theme.Muted : Theme.Text;
         _pause.Visible = !finished;
-        string pauseText = paused ? "Reanudar" : "Pausar";
+        string pauseText = paused ? "Resume" : "Pause";
         if (_pause.Text != pauseText) _pause.Text = pauseText;
         _bar.Set(finished ? 1 : fraction, finished ? Theme.Accent : paused ? Theme.Muted : Theme.Categories[1]);
     }

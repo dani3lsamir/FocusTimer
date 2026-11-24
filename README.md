@@ -1,31 +1,31 @@
 # FocusTimer
 
 Temporizador **Pomodoro** personal para Windows: registra tu tiempo de enfoque y muestra si cumples tus metas.
-Pequeño, **100 % sin conexión** y con muy poca memoria. Hecho en C# + .NET 10 + WinForms, sin paquetes NuGet en la app.
+Pequeño, **100 % sin conexión** y con muy poca memoria. Hecho en C# + .NET 10 + WinForms, sin paquetes NuGet en la app. **La interfaz está en inglés.**
 
 ## Qué hace
 
 - **Pomodoro**: 25 min de enfoque, 5 min de descanso corto y 15 min de descanso largo cada 4 pomodoros (todo configurable).
-  Botones: *Iniciar*, *Pausar/Reanudar*, *Detener* y *Saltar descanso*.
-- **Un clic para empezar**: *Iniciar* usa la última categoría y la última tarea. La tarea es opcional
+  Botones: *Start*, *Pause/Resume*, *Stop* y *Skip break*.
+- **Un clic para empezar**: *Start* usa la última categoría y la última tarea. La tarea es opcional
   (lista con las 10 más recientes). Enter también inicia.
 - **Registro**: cada sesión de enfoque se añade a `sessions.csv`. Una sesión detenida antes de tiempo se guarda con `completed=false`.
   Los descansos no se registran.
-- **Avisos**: al terminar un enfoque o un descanso salen una notificación de Windows («Pomodoro terminado – toma 5 min»)
+- **Avisos**: al terminar un enfoque o un descanso salen una notificación de Windows («Pomodoro done – take 5 min»)
   y el botón de la barra de tareas **parpadea hasta que abras la ventana**.
 - **Barra de tareas**: la barra de progreso del botón muestra el tiempo restante.
   Es **verde** en enfoque, **amarilla** en descanso y **roja** en pausa (Windows solo ofrece esos tres colores).
   El título de la ventana muestra los minutos restantes, así que los ves al pasar el ratón.
 - **Timers** (pestaña aparte, para cocinar o cualquier cosa): varios a la vez (hasta 10), cada uno con su nombre.
   - Rápidos de **3, 5 y 10 min**.
-  - **Timers guardados** con nombre, como «Huevo · 6:30»: un clic los inicia y clic derecho los edita o elimina.
+  - **Timers guardados** con nombre, como «Eggs · 6:30»: un clic los inicia y clic derecho los edita o elimina.
   - La duración se escribe libremente: `10` (min), `6:30`, `6.5`, `1:15:00`, `90s` o `2h`.
   - Se pueden pausar y quitar. Al terminar avisan igual que el Pomodoro: notificación y parpadeo.
   - **No se registran** en `sessions.csv` ni cuentan para metas. Si cierras la app con timers corriendo, te lo pregunta antes.
 - **Metas**: meta diaria de pomodoros (por defecto 8) y metas semanales opcionales en minutos por categoría.
-- **Panel**: resumen de hoy (minutos, pomodoros frente a la meta, desglose por categoría), gráfico semanal apilado por categoría,
+- **Dashboard**: resumen de hoy (minutos, pomodoros frente a la meta, desglose por categoría), gráfico semanal apilado por categoría,
   metas semanales y **racha** de días cumpliendo la meta diaria.
-- **Ajustes**: duraciones, categorías (añadir, renombrar y reordenar), metas, *Iniciar con Windows* y *Abrir carpeta de datos*.
+- **Settings**: duraciones, categorías (añadir, renombrar y reordenar; por defecto *Work*, *Study* y *Personal*), metas, *Start with Windows* y *Open data folder*.
 - **Tema AMOLED**: fondo negro puro, barra de título oscura y un solo color de acento. La ventana recuerda su posición.
 
 ### Reglas de cálculo
@@ -83,13 +83,13 @@ También compila desde Linux o macOS (`EnableWindowsTargeting`), aunque allí so
    ```
 3. Para anclarla a la barra de tareas, ábrela, haz clic derecho en su botón y elige **Anclar a la barra de tareas**.
    Hazlo desde la ventana abierta y no desde el `.exe`, para que el botón anclado y la ventana sean el mismo.
-4. Opcional: en *Ajustes* activa **Iniciar con Windows**.
+4. Opcional: en *Settings* activa **Start with Windows**.
 
 Si ya está abierta y la vuelves a lanzar, se trae al frente la ventana existente. Nunca hay dos copias a la vez.
 
 ## Dónde se guardan los datos
 
-Todo vive en **`%LOCALAPPDATA%\FocusTimer\`** (botón *Abrir carpeta de datos* en Ajustes). Nada se guarda en este repositorio.
+Todo vive en **`%LOCALAPPDATA%\FocusTimer\`** (botón *Open data folder* en Settings). Nada se guarda en este repositorio.
 
 | Archivo | Contenido |
 |---|---|
@@ -114,8 +114,8 @@ Si un corte deja una línea a medias, esa fila se ignora y las demás siguen int
   No hay actualizaciones automáticas, telemetría, informes de errores, ni fuentes o imágenes descargadas.
   Un test (`NoNetworkTests`) falla si alguien añade código de red o un paquete NuGet a la app.
 - **Ningún dato sale de tu PC.** Los errores inesperados solo se escriben en `error.log`, en tu carpeta de datos.
-- Lo que la app escribe fuera de su carpeta de datos son dos claves del registro, solo de tu usuario (HKCU):
-  - `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\FocusTimer`: solo si activas *Iniciar con Windows*.
+- Lo único que la app escribe fuera de su carpeta de datos son dos claves del registro, solo de tu usuario (HKCU):
+  - `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\FocusTimer`: solo si activas *Start with Windows*.
   - `HKCU\Software\Classes\AppUserModelId\FocusTimer.App`: nombre e icono para que Windows muestre las notificaciones.
 
 ### Bloquearla en el Firewall de Windows (certeza extra)
@@ -137,7 +137,7 @@ Para quitarlas: `Remove-NetFirewallRule -DisplayName "FocusTimer - bloquear*"`.
 Con la app abierta:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\medir-ram.ps1 -Etiqueta reposo
+powershell -ExecutionPolicy Bypass -File .\scripts\measure-ram.ps1 -Label idle
 ```
 
 Muestra el **conjunto de trabajo privado**, que es la columna «Memoria» del Administrador de tareas. Objetivo: menos de 40 MB.
@@ -146,7 +146,7 @@ cero dependencias y el temporizador de la UI a 2 Hz solo mientras corre (cada 30
 
 ## Desinstalar
 
-1. En *Ajustes*, desactiva *Iniciar con Windows*.
+1. En *Settings*, desactiva *Start with Windows*.
 2. Borra `%LOCALAPPDATA%\Programs\FocusTimer\` y el acceso directo del menú Inicio.
 3. Borra `%LOCALAPPDATA%\FocusTimer\` (tus datos: guarda antes `sessions.csv` si lo quieres).
 4. Opcional: `Remove-Item "HKCU:\Software\Classes\AppUserModelId\FocusTimer.App"`.
@@ -157,7 +157,7 @@ cero dependencias y el temporizador de la UI a 2 Hz solo mientras corre (cada 30
 src/FocusTimer.Core   Lógica sin UI (net10.0): temporizador, CSV, ajustes, metas, racha. Corre en cualquier SO.
 src/FocusTimer.App    WinForms (net10.0-windows): ventana, gráfico GDI+, interop con Windows (Native/).
 tests/FocusTimer.Tests  xUnit: máquina de estados, CSV, metas/racha, medianoche, recuperación y "sin red".
-scripts/medir-ram.ps1   Medición de memoria.
+scripts/measure-ram.ps1  Medición de memoria.
 ```
 
 El único paquete NuGet del repositorio es `xunit.v3`, y solo en el proyecto de tests: nunca va dentro del `.exe`.

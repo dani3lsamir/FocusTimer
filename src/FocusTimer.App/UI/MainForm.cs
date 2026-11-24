@@ -41,7 +41,7 @@ internal sealed class MainForm : Form
 
         string startupNote = RecoverPreviousRun();
         _records = _log.ReadAll(out int skipped);
-        if (skipped > 0) startupNote += $" {skipped} fila(s) dañada(s) en sessions.csv se ignoraron (no se borraron).";
+        if (skipped > 0) startupNote += $" {skipped} damaged row(s) in sessions.csv were ignored (not deleted).";
 
         _engine.Durations = _settings.ToDurations();
         _engine.SessionFinished += OnSessionFinished;
@@ -72,7 +72,7 @@ internal sealed class MainForm : Form
         _pages = [_timerView, _timersView, _dashboardHost, _settingsView];
         foreach (var p in _pages) { p.Dock = DockStyle.Fill; p.Visible = false; }
 
-        _tabs = [new NavTab("Pomodoro"), new NavTab("Timers"), new NavTab("Panel"), new NavTab("Ajustes")];
+        _tabs = [new NavTab("Pomodoro"), new NavTab("Timers"), new NavTab("Dashboard"), new NavTab("Settings")];
         var nav = new TableLayoutPanel { Dock = DockStyle.Top, Height = 40, ColumnCount = _tabs.Length, BackColor = Theme.Back, Margin = new Padding(0) };
         for (int i = 0; i < _tabs.Length; i++)
         {
@@ -113,11 +113,11 @@ internal sealed class MainForm : Form
         try
         {
             if (_checkpoint.Recover(_log.Main) is { } r)
-                note = $"Se recuperó un pomodoro interrumpido ({Theme.Minutes(r.ActualMin)}), guardado como incompleto.";
+                note = $"Recovered an interrupted pomodoro ({Theme.Minutes(r.ActualMin)}), saved as incomplete.";
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            note = "No se pudo recuperar la sesión interrumpida todavía (¿sessions.csv abierto?). Se intentará otra vez.";
+            note = "Couldn't recover the interrupted session yet (is sessions.csv open?). Will retry next time.";
         }
         _log.TryFlushPending();
         // Icono para los toasts (se copia del recurso embebido a la carpeta de datos, local).
@@ -181,9 +181,9 @@ internal sealed class MainForm : Form
         {
             string question = (focus, timers) switch
             {
-                (true, true) => "Hay un pomodoro y timers en curso. ¿Cerrar? El pomodoro se guarda como incompleto y los timers se pierden.",
-                (true, false) => "Hay un pomodoro en curso. ¿Cerrar y guardarlo como incompleto?",
-                _ => "Hay timers en curso y se perderán. ¿Cerrar?",
+                (true, true) => "A pomodoro and timers are running. Close anyway? The pomodoro is saved as incomplete and the timers are lost.",
+                (true, false) => "A pomodoro is running. Close and save it as incomplete?",
+                _ => "Timers are running and will be lost. Close anyway?",
             };
             var answer = MessageBox.Show(this, question,
                 "FocusTimer", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
@@ -246,7 +246,7 @@ internal sealed class MainForm : Form
         if (_log.HasPending && now - _lastPendingTry > TimeSpan.FromMinutes(1))
         {
             _lastPendingTry = now;
-            if (_log.TryFlushPending()) _timerView.SetStatus("Las sesiones pendientes ya se guardaron en sessions.csv.");
+            if (_log.TryFlushPending()) _timerView.SetStatus("Pending sessions were saved to sessions.csv.");
         }
     }
 
@@ -257,12 +257,12 @@ internal sealed class MainForm : Form
             bool inMain = _log.Append(r);
             _checkpoint.Clear();
             _timerView.SetStatus(inMain ? "" :
-                "sessions.csv está bloqueado (¿abierto en Excel?). La sesión se guardó en sessions.pending.csv y se pasará sola.");
+                "sessions.csv is locked (open in Excel?). The session went to sessions.pending.csv and will be merged automatically.");
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             // El checkpoint se conserva: al reabrir la app la sesión se recupera.
-            _timerView.SetStatus("No se pudo guardar la sesión: " + e.Message);
+            _timerView.SetStatus("Couldn't save the session: " + e.Message);
         }
         _records.Add(r);
         RefreshStats();
@@ -271,18 +271,18 @@ internal sealed class MainForm : Form
     private void OnPhaseCompleted(PhaseEnded p)
     {
         var today = Stats.Day(_records, DateOnly.FromDateTime(DateTime.Now), _settings);
-        string progress = $"{today.CompletedPomodoros} / {_settings.DailyGoalPomodoros} pomodoros hoy";
+        string progress = $"{today.CompletedPomodoros} / {_settings.DailyGoalPomodoros} pomodoros today";
         var (title, body) = p.Ended == Phase.Focus
-            ? ($"Pomodoro terminado – toma {(int)p.NextDuration.TotalMinutes} min",
-               (p.Next == Phase.LongBreak ? "Descanso largo. " : "Descanso corto. ") + progress)
-            : ("Descanso terminado", "Pulsa Iniciar para el siguiente pomodoro. " + progress);
+            ? ($"Pomodoro done – take {(int)p.NextDuration.TotalMinutes} min",
+               (p.Next == Phase.LongBreak ? "Long break. " : "Short break. ") + progress)
+            : ("Break over", "Press Start for the next pomodoro. " + progress);
         Notify(title, body);
     }
 
     private void OnCountdownFinished(Countdown c)
     {
         _timersView.RebuildRows();
-        Notify($"⏰ {c.Label} – terminado", $"Timer de {DurationText.Format(c.Duration)} cumplido.");
+        Notify($"⏰ {c.Label} – done", $"{DurationText.Format(c.Duration)} timer finished.");
     }
 
     private void Notify(string title, string body)
@@ -343,7 +343,7 @@ internal sealed class MainForm : Form
         if (_engine.Phase != Phase.Idle)
         {
             int min = (int)Math.Ceiling(_engine.Remaining.TotalMinutes);
-            string what = _engine.IsPaused ? "en pausa" : _engine.Phase == Phase.Focus ? "enfoque" : "descanso";
+            string what = _engine.IsPaused ? "paused" : _engine.Phase == Phase.Focus ? "focus" : "break";
             parts.Add($"{min} min · {what}");
         }
         if (_board.NextDue() is { } next)
@@ -388,7 +388,7 @@ internal sealed class MainForm : Form
         try { SettingsStore.Save(_paths.SettingsJson, _settings); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            _timerView.SetStatus("No se pudieron guardar los ajustes: " + e.Message);
+            _timerView.SetStatus("Couldn't save settings: " + e.Message);
         }
     }
 

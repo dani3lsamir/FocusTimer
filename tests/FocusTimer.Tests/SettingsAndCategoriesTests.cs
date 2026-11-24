@@ -9,13 +9,13 @@ public class SettingsAndCategoriesTests
     {
         var s = new AppSettings();
         s.Normalize();
-        Assert.Equal(["Trabajo", "Estudio", "Personal"], s.Categories.Select(c => c.Name));
+        Assert.Equal(["Work", "Study", "Personal"], s.Categories.Select(c => c.Name));
         Assert.Equal(25, s.FocusMinutes);
         Assert.Equal(5, s.ShortBreakMinutes);
         Assert.Equal(15, s.LongBreakMinutes);
         Assert.Equal(4, s.LongBreakEvery);
         Assert.Equal(8, s.DailyGoalPomodoros);
-        Assert.Equal("trabajo", s.LastCategoryId);
+        Assert.Equal("work", s.LastCategoryId);
     }
 
     [Fact]
@@ -76,29 +76,29 @@ public class SettingsAndCategoriesTests
     public void Rename_keeps_old_rows_in_the_same_category()
     {
         var s = new AppSettings();
-        Assert.Null(Categories.Rename(s, "trabajo", "Empleo"));
-        Assert.Equal("Empleo", Categories.DisplayName(s, "Trabajo"));
-        Assert.Equal("Empleo", Categories.DisplayName(s, "trabajo "));
-        Assert.Null(Categories.Rename(s, "trabajo", "Oficina"));
-        Assert.Equal("Oficina", Categories.DisplayName(s, "Trabajo"));
+        Assert.Null(Categories.Rename(s, "work", "Empleo"));
+        Assert.Equal("Empleo", Categories.DisplayName(s, "Work"));
+        Assert.Equal("Empleo", Categories.DisplayName(s, "work "));
+        Assert.Null(Categories.Rename(s, "work", "Oficina"));
+        Assert.Equal("Oficina", Categories.DisplayName(s, "Work"));
         Assert.Equal("Oficina", Categories.DisplayName(s, "Empleo"));
         // volver al nombre original
-        Assert.Null(Categories.Rename(s, "trabajo", "Trabajo"));
-        var cat = Categories.Find(s, "trabajo")!;
-        Assert.Equal("Trabajo", cat.Name);
-        Assert.DoesNotContain("Trabajo", cat.Aliases);
-        Assert.Equal("Trabajo", Categories.DisplayName(s, "Oficina"));
+        Assert.Null(Categories.Rename(s, "work", "Work"));
+        var cat = Categories.Find(s, "work")!;
+        Assert.Equal("Work", cat.Name);
+        Assert.DoesNotContain("Work", cat.Aliases);
+        Assert.Equal("Work", Categories.DisplayName(s, "Oficina"));
     }
 
     [Fact]
     public void Rename_and_add_reject_duplicates_and_aliases()
     {
         var s = new AppSettings();
-        Assert.NotNull(Categories.Rename(s, "trabajo", "estudio"));
+        Assert.NotNull(Categories.Rename(s, "work", "study"));
         Assert.NotNull(Categories.Add(s, "PERSONAL", out _));
         Assert.NotNull(Categories.Add(s, "  ", out _));
-        Categories.Rename(s, "trabajo", "Empleo");
-        Assert.NotNull(Categories.Add(s, "Trabajo", out _)); // es alias de Empleo
+        Categories.Rename(s, "work", "Empleo");
+        Assert.NotNull(Categories.Add(s, "Work", out _)); // es alias de Empleo
         Assert.Null(Categories.Add(s, "Deporte", out var added));
         Assert.Equal("Deporte", added!.Name);
         Assert.Equal(4, s.Categories.Count);
@@ -109,7 +109,7 @@ public class SettingsAndCategoriesTests
     {
         var s = new AppSettings();
         Assert.Equal("Viejo", Categories.DisplayName(s, "Viejo"));
-        Assert.Equal("(sin categoría)", Categories.DisplayName(s, ""));
+        Assert.Equal("(no category)", Categories.DisplayName(s, ""));
     }
 
     [Fact]
@@ -117,8 +117,8 @@ public class SettingsAndCategoriesTests
     {
         var s = new AppSettings();
         Assert.True(Categories.Move(s, "personal", -1));
-        Assert.Equal(["Trabajo", "Personal", "Estudio"], s.Categories.Select(c => c.Name));
-        Assert.False(Categories.Move(s, "trabajo", -1));
-        Assert.False(Categories.Move(s, "estudio", +1));
+        Assert.Equal(["Work", "Personal", "Study"], s.Categories.Select(c => c.Name));
+        Assert.False(Categories.Move(s, "work", -1));
+        Assert.False(Categories.Move(s, "study", +1));
     }
 }

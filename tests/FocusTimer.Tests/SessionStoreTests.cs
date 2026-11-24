@@ -5,7 +5,7 @@ namespace FocusTimer.Tests;
 
 public class SessionStoreTests
 {
-    private static SessionRecord Rec(string task, string cat = "Trabajo", bool done = true, double actual = 25) =>
+    private static SessionRecord Rec(string task, string cat = "Work", bool done = true, double actual = 25) =>
         new(SessionRecord.NewId(), new DateTime(2026, 11, 24, 9, 0, 0), new DateTime(2026, 11, 24, 9, 25, 0),
             25, actual, cat, task, done);
 

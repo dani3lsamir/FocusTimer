@@ -24,7 +24,7 @@ internal sealed class TimerView : UserControl
         ForeColor = Theme.Text;
         Padding = new Padding(16, 4, 16, 8);
 
-        _phase = Theme.Label("Listo", Theme.Bold, Theme.Muted);
+        _phase = Theme.Label("Ready", Theme.Bold, Theme.Muted);
         _phase.Anchor = AnchorStyles.None;
         _time = new Label
         {
@@ -44,12 +44,12 @@ internal sealed class TimerView : UserControl
         };
         Theme.StyleInput(_task);
 
-        _start = Theme.Button("Iniciar", primary: true);
+        _start = Theme.Button("Start", primary: true);
         _start.Anchor = AnchorStyles.Left | AnchorStyles.Right;
-        _pause = Theme.Button("Pausar");
-        _stop = Theme.Button("Detener");
-        _skip = Theme.Button("Saltar descanso");
-        _tips.SetToolTip(_stop, "Termina el pomodoro y lo guarda como incompleto");
+        _pause = Theme.Button("Pause");
+        _stop = Theme.Button("Stop");
+        _skip = Theme.Button("Skip break");
+        _tips.SetToolTip(_stop, "Ends the pomodoro and saves it as incomplete");
         _start.Click += (_, _) => StartClicked?.Invoke(this, EventArgs.Empty);
         _pause.Click += (_, _) => PauseClicked?.Invoke(this, EventArgs.Empty);
         _stop.Click += (_, _) => StopClicked?.Invoke(this, EventArgs.Empty);
@@ -77,7 +77,7 @@ internal sealed class TimerView : UserControl
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         Control[] rows =
         [
-            _phase, _time, Theme.Label("Categoría"), _chips, Theme.Label("Tarea (opcional)"), _task,
+            _phase, _time, Theme.Label("Category"), _chips, Theme.Label("Task (optional)"), _task,
             _start, secondary, Goals, _status,
         ];
         foreach (var c in rows)
@@ -135,12 +135,12 @@ internal sealed class TimerView : UserControl
     {
         string phase = e.Phase switch
         {
-            Phase.Focus => "Enfoque · " + e.Category,
-            Phase.ShortBreak => "Descanso corto",
-            Phase.LongBreak => "Descanso largo",
-            _ => "Listo",
+            Phase.Focus => "Focus · " + e.Category,
+            Phase.ShortBreak => "Short break",
+            Phase.LongBreak => "Long break",
+            _ => "Ready",
         };
-        if (e.IsPaused) phase += " · en pausa";
+        if (e.IsPaused) phase += " · paused";
         SetText(_phase, phase);
         _phase.ForeColor = e.IsPaused ? Theme.Muted : e.Phase == Phase.Focus ? Theme.Accent : e.IsBreak ? Theme.BreakText : Theme.Muted;
 
@@ -152,7 +152,7 @@ internal sealed class TimerView : UserControl
         bool focus = e.Phase == Phase.Focus;
         _start.Enabled = !focus;
         _pause.Enabled = e.Phase != Phase.Idle;
-        SetText(_pause, e.IsPaused ? "Reanudar" : "Pausar");
+        SetText(_pause, e.IsPaused ? "Resume" : "Pause");
         _stop.Enabled = e.Phase != Phase.Idle;
         _skip.Enabled = e.IsBreak;
         _chips.Enabled = !focus;

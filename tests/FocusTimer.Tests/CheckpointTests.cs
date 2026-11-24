@@ -5,7 +5,7 @@ namespace FocusTimer.Tests;
 public class CheckpointTests
 {
     private static ActiveCheckpoint Cp(string id = "abc") => new(id,
-        new DateTime(2026, 11, 24, 9, 0, 0), new DateTime(2026, 11, 24, 9, 12, 30), 25, 12.5, "Trabajo", "tarea, \"x\"");
+        new DateTime(2026, 11, 24, 9, 0, 0), new DateTime(2026, 11, 24, 9, 12, 30), 25, 12.5, "Work", "tarea, \"x\"");
 
     [Fact]
     public void Recover_appends_incomplete_session_and_clears()
@@ -30,7 +30,7 @@ public class CheckpointTests
         using var dir = new TempDir();
         var store = new SessionStore(dir.File("sessions.csv"));
         var cps = new CheckpointStore(dir.File("current.json"));
-        store.Append(new SessionRecord("abc", DateTime.Today, DateTime.Today, 25, 25, "Trabajo", "", true));
+        store.Append(new SessionRecord("abc", DateTime.Today, DateTime.Today, 25, 25, "Work", "", true));
         cps.Save(Cp("abc"));
         Assert.Null(cps.Recover(store));
         Assert.Single(store.ReadAll());

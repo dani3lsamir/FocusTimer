@@ -12,13 +12,13 @@ internal sealed class GoalsPanel : PaintedControl
     public void SetData(DaySummary today, int dailyGoal, int streak, WeekSummary week, AppSettings s)
     {
         _rows.Clear();
-        _rows.Add(new("Hoy", $"{today.CompletedPomodoros} / {dailyGoal} pomodoros · {Theme.Minutes(today.FocusMinutes)}",
+        _rows.Add(new("Today", $"{today.CompletedPomodoros} / {dailyGoal} pomodoros · {Theme.Minutes(today.FocusMinutes)}",
             (double)today.CompletedPomodoros / dailyGoal, Theme.Accent));
-        _rows.Add(new("Racha", streak == 1 ? "1 día" : $"{streak} días", -1, Theme.Accent));
+        _rows.Add(new("Streak", streak == 1 ? "1 day" : $"{streak} days", -1, Theme.Accent));
         foreach (var g in week.Goals)
         {
             int idx = s.Categories.FindIndex(c => c.Name == g.Category);
-            _rows.Add(new($"{g.Category} (semana)", $"{Theme.Minutes(g.ActualMinutes)} / {Theme.Minutes(g.GoalMinutes)}",
+            _rows.Add(new($"{g.Category} (week)", $"{Theme.Minutes(g.ActualMinutes)} / {Theme.Minutes(g.GoalMinutes)}",
                 g.Fraction, Theme.CategoryColor(idx)));
         }
         Height = S(_rows.Count * RowHeight + 4);

@@ -38,7 +38,7 @@ internal static class Program
         try
         {
             File.AppendAllText(Path.Combine(paths.Root, "error.log"), $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {ex}\r\n\r\n");
-            MessageBox.Show("Ocurrió un error inesperado. Los detalles están en error.log, en la carpeta de datos.\n\n" + ex?.Message,
+            MessageBox.Show("Something went wrong. Details are in error.log, in the data folder.\n\n" + ex?.Message,
                 "FocusTimer", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
         catch (Exception) { }

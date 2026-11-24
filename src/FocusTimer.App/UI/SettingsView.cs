@@ -46,7 +46,7 @@ internal sealed class SettingsView : UserControl
 
         _startup = new CheckBox
         {
-            Text = "Iniciar con Windows", AutoSize = true, ForeColor = Theme.Text, FlatStyle = FlatStyle.Flat,
+            Text = "Start with Windows", AutoSize = true, ForeColor = Theme.Text, FlatStyle = FlatStyle.Flat,
             Margin = new Padding(0, 6, 0, 4), Cursor = Cursors.Hand,
         };
         _startup.CheckedChanged += (_, _) =>
@@ -58,7 +58,7 @@ internal sealed class SettingsView : UserControl
             }
         };
 
-        var openFolder = Theme.Button("Abrir carpeta de datos");
+        var openFolder = Theme.Button("Open data folder");
         openFolder.AutoSize = true;
         openFolder.Click += (_, _) => OpenDataFolder();
 
@@ -95,16 +95,16 @@ internal sealed class SettingsView : UserControl
             root.SetColumnSpan(c, 2);
         }
 
-        Section("Duraciones (minutos)");
-        Field("Enfoque", _focus);
-        Field("Descanso corto", _short);
-        Field("Descanso largo", _long);
-        Field("Descanso largo cada (pomodoros)", _every);
+        Section("Durations (minutes)");
+        Field("Focus", _focus);
+        Field("Short break", _short);
+        Field("Long break", _long);
+        Field("Long break every (pomodoros)", _every);
 
-        Section("Metas");
-        Field("Meta diaria (pomodoros completos)", _daily);
+        Section("Goals");
+        Field("Daily goal (completed pomodoros)", _daily);
 
-        Section("Categorías");
+        Section("Categories");
         var catRow = new TableLayoutPanel { ColumnCount = 2, Height = 104, Dock = DockStyle.Top, Margin = new Padding(0), BackColor = Theme.Back };
         catRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         catRow.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 44));
@@ -120,25 +120,25 @@ internal sealed class SettingsView : UserControl
         nameRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         nameRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         nameRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        var add = Theme.Button("Añadir"); add.AutoSize = true; add.Margin = new Padding(0, 2, 6, 2); add.Click += (_, _) => AddCategory();
-        var rename = Theme.Button("Renombrar"); rename.AutoSize = true; rename.Margin = new Padding(0, 2, 0, 2); rename.Click += (_, _) => RenameSelected();
+        var add = Theme.Button("Add"); add.AutoSize = true; add.Margin = new Padding(0, 2, 6, 2); add.Click += (_, _) => AddCategory();
+        var rename = Theme.Button("Rename"); rename.AutoSize = true; rename.Margin = new Padding(0, 2, 0, 2); rename.Click += (_, _) => RenameSelected();
         nameRow.Controls.Add(_name, 0, 0);
         nameRow.Controls.Add(add, 1, 0);
         nameRow.Controls.Add(rename, 2, 0);
         Full(nameRow);
         Full(_catError);
-        Field("Meta semanal de la categoría (min, 0 = sin meta)", _weekly);
-        var hint = Theme.Label("Renombrar no cambia el CSV: las sesiones antiguas siguen contando para la categoría.", Theme.Small);
+        Field("Weekly goal for this category (min, 0 = none)", _weekly);
+        var hint = Theme.Label("Renaming doesn't change the CSV: past sessions still count for the category.", Theme.Small);
         hint.MaximumSize = new Size(340, 0);
         Full(hint);
 
-        Section("Sistema");
+        Section("System");
         Full(_startup);
         Full(openFolder);
         var path = Theme.Label(dataFolder, Theme.Small);
         path.MaximumSize = new Size(340, 0);
         Full(path);
-        var privacy = Theme.Label("100 % sin conexión: ningún dato sale de este PC. sessions.csv es la exportación.", Theme.Small);
+        var privacy = Theme.Label("100% offline: no data leaves this PC. sessions.csv is the export.", Theme.Small);
         privacy.MaximumSize = new Size(340, 0);
         Full(privacy);
 
@@ -178,7 +178,7 @@ internal sealed class SettingsView : UserControl
         _cats.BeginUpdate();
         _cats.Items.Clear();
         foreach (var c in _s.Categories)
-            _cats.Items.Add(c.WeeklyGoalMinutes > 0 ? $"{c.Name}   ·   meta {Theme.Minutes(c.WeeklyGoalMinutes)}/sem" : c.Name);
+            _cats.Items.Add(c.WeeklyGoalMinutes > 0 ? $"{c.Name}   ·   goal {Theme.Minutes(c.WeeklyGoalMinutes)}/wk" : c.Name);
         _cats.EndUpdate();
         int idx = _s.Categories.FindIndex(c => c.Id == selectId);
         _cats.SelectedIndex = idx >= 0 ? idx : (_s.Categories.Count > 0 ? 0 : -1);

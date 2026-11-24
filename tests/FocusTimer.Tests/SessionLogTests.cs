@@ -5,7 +5,7 @@ namespace FocusTimer.Tests;
 public class SessionLogTests
 {
     private static SessionRecord Rec(string task) =>
-        new(SessionRecord.NewId(), new DateTime(2026, 11, 24, 9, 0, 0), new DateTime(2026, 11, 24, 9, 25, 0), 25, 25, "Trabajo", task, true);
+        new(SessionRecord.NewId(), new DateTime(2026, 11, 24, 9, 0, 0), new DateTime(2026, 11, 24, 9, 25, 0), 25, 25, "Work", task, true);
 
     [Fact]
     public void Locked_main_file_goes_to_pending_then_merges()

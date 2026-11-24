@@ -15,7 +15,7 @@ public static class Categories
 
     /// <summary>Nombre con el que se agrupa una fila del CSV: el nombre actual de su categoría, o el original si ya no existe.</summary>
     public static string DisplayName(AppSettings s, string csvCategory) =>
-        Resolve(s, csvCategory)?.Name ?? (string.IsNullOrWhiteSpace(csvCategory) ? "(sin categoría)" : csvCategory.Trim());
+        Resolve(s, csvCategory)?.Name ?? (string.IsNullOrWhiteSpace(csvCategory) ? "(no category)" : csvCategory.Trim());
 
     public static string? Add(AppSettings s, string name, out CategoryDef? added)
     {
@@ -31,7 +31,7 @@ public static class Categories
     public static string? Rename(AppSettings s, string id, string newName)
     {
         var cat = Find(s, id);
-        if (cat is null) return "La categoría no existe.";
+        if (cat is null) return "Category not found.";
         newName = (newName ?? "").Trim();
         if (newName == cat.Name) return null;
         if (Validate(s, newName, cat) is { } err) return err;
@@ -53,13 +53,13 @@ public static class Categories
 
     private static string? Validate(AppSettings s, string name, CategoryDef? self)
     {
-        if (name.Length == 0) return "Escribe un nombre.";
-        if (name.Length > 40) return "Máximo 40 caracteres.";
+        if (name.Length == 0) return "Type a name.";
+        if (name.Length > 40) return "40 characters max.";
         foreach (var c in s.Categories)
         {
             if (c == self) continue;
-            if (Same(c.Name, name)) return "Ya existe una categoría con ese nombre.";
-            if (c.Aliases.Any(a => Same(a, name))) return $"Ese nombre lo usó antes «{c.Name}».";
+            if (Same(c.Name, name)) return "A category with that name already exists.";
+            if (c.Aliases.Any(a => Same(a, name))) return $"That name was used before by \"{c.Name}\".";
         }
         return null;
     }

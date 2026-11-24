@@ -6,7 +6,7 @@ namespace FocusTimer.App.UI;
 /// <summary>Panel: hoy, gráfico semanal apilado por categoría (GDI+, sin librerías), metas semanales y racha.</summary>
 internal sealed class DashboardView : PaintedControl
 {
-    private static readonly string[] DayNames = ["L", "M", "X", "J", "V", "S", "D"];
+    private static readonly string[] DayNames = ["M", "T", "W", "T", "F", "S", "S"];
 
     private DaySummary? _today;
     private WeekSummary? _week;
@@ -44,20 +44,20 @@ internal sealed class DashboardView : PaintedControl
         int pad = S(16), w = Width - 2 * pad, y = S(8);
 
         // ---- Hoy ----
-        Heading(g, "Hoy", pad, ref y, w);
+        Heading(g, "Today", pad, ref y, w);
         if (g is not null)
         {
             int col = w / 3;
-            StatBlock(g, Theme.Minutes(_today.FocusMinutes), "de enfoque", pad, y, col, Theme.Text);
+            StatBlock(g, Theme.Minutes(_today.FocusMinutes), "focus", pad, y, col, Theme.Text);
             StatBlock(g, $"{_today.CompletedPomodoros} / {_dailyGoal}", "pomodoros",
                 pad + col, y, col, _today.CompletedPomodoros >= _dailyGoal ? Theme.Accent : Theme.Text);
-            StatBlock(g, _streak.ToString(), _streak == 1 ? "día de racha" : "días de racha", pad + 2 * col, y, col, Theme.Text);
+            StatBlock(g, _streak.ToString(), "day streak", pad + 2 * col, y, col, Theme.Text);
         }
         y += S(58);
         var todayCats = _today.MinutesByCategory.Where(kv => kv.Value > 0).ToList();
         if (todayCats.Count == 0)
         {
-            if (g is not null) Draw(g, "Aún no hay sesiones hoy.", Theme.Normal, new Rectangle(pad, y, w, S(20)), Theme.Muted);
+            if (g is not null) Draw(g, "No sessions yet today.", Theme.Normal, new Rectangle(pad, y, w, S(20)), Theme.Muted);
             y += S(24);
         }
         else
@@ -78,7 +78,7 @@ internal sealed class DashboardView : PaintedControl
 
         // ---- Semana ----
         y += S(8);
-        Heading(g, "Esta semana · " + Theme.Minutes(_week.TotalMinutes), pad, ref y, w);
+        Heading(g, "This week · " + Theme.Minutes(_week.TotalMinutes), pad, ref y, w);
         int chartH = S(140);
         if (g is not null) Chart(g, new Rectangle(pad, y, w, chartH));
         y += chartH + S(26);
@@ -98,11 +98,11 @@ internal sealed class DashboardView : PaintedControl
         y += S(28);
 
         // ---- Metas semanales ----
-        Heading(g, "Metas semanales", pad, ref y, w);
+        Heading(g, "Weekly goals", pad, ref y, w);
         if (_week.Goals.Count == 0)
         {
             if (g is not null)
-                Draw(g, "Sin metas por categoría. Agrégalas en Ajustes.", Theme.Normal, new Rectangle(pad, y, w, S(20)), Theme.Muted);
+                Draw(g, "No category goals yet. Add them in Settings.", Theme.Normal, new Rectangle(pad, y, w, S(20)), Theme.Muted);
             y += S(24);
         }
         foreach (var goal in _week.Goals)
@@ -158,7 +158,7 @@ internal sealed class DashboardView : PaintedControl
         int gy = plot.Bottom - (int)Math.Round(goalMinutes / max * plot.Height);
         using (var pen = new Pen(Theme.Muted) { DashStyle = DashStyle.Dash })
             g.DrawLine(pen, plot.Left, gy, plot.Right, gy);
-        Draw(g, $"meta {goalMinutes:0} min", Theme.Small, new Rectangle(plot.Left, gy - labelH, plot.Width, labelH),
+        Draw(g, $"goal {goalMinutes:0} min", Theme.Small, new Rectangle(plot.Left, gy - labelH, plot.Width, labelH),
             Theme.Muted, TextFormatFlags.Right);
     }
 

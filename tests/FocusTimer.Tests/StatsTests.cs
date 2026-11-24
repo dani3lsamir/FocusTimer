@@ -14,7 +14,7 @@ public class StatsTests
         return s;
     }
 
-    private static SessionRecord R(DateTime start, double min = 25, string cat = "Trabajo", bool done = true) =>
+    private static SessionRecord R(DateTime start, double min = 25, string cat = "Work", bool done = true) =>
         new(SessionRecord.NewId(), start, start.AddMinutes(min), 25, min, cat, "", done);
 
     private static List<SessionRecord> Pomodoros(DateOnly day, int n) =>
@@ -63,13 +63,13 @@ public class StatsTests
     public void Day_summary_counts_minutes_incl_incomplete_but_only_completed_pomodoros()
     {
         var d = new DateTime(2026, 11, 24, 9, 0, 0);
-        var list = new[] { R(d), R(d.AddHours(1), 10, "Estudio", done: false), R(d.AddHours(2), 25, "Personal") };
+        var list = new[] { R(d), R(d.AddHours(1), 10, "Study", done: false), R(d.AddHours(2), 25, "Personal") };
         var day = Stats.Day(list, new DateOnly(2026, 11, 24), S);
         Assert.Equal(60, day.FocusMinutes);
         Assert.Equal(2, day.CompletedPomodoros);
-        Assert.Equal(25, day.MinutesByCategory["Trabajo"]);
-        Assert.Equal(10, day.MinutesByCategory["Estudio"]);
-        Assert.Equal(["Trabajo", "Estudio", "Personal"], day.MinutesByCategory.Keys);
+        Assert.Equal(25, day.MinutesByCategory["Work"]);
+        Assert.Equal(10, day.MinutesByCategory["Study"]);
+        Assert.Equal(["Work", "Study", "Personal"], day.MinutesByCategory.Keys);
     }
 
     [Fact]
@@ -77,8 +77,8 @@ public class StatsTests
     {
         var s = MakeSettings();
         var mon = new DateTime(2026, 11, 23, 9, 0, 0);
-        var list = new[] { R(mon, 40, "Trabajo"), R(mon.AddDays(2), 35, "Trabajo") };
-        Categories.Rename(s, "trabajo", "Empleo");
+        var list = new[] { R(mon, 40, "Work"), R(mon.AddDays(2), 35, "Work") };
+        Categories.Rename(s, "work", "Empleo");
         var w = Stats.Week(list, new DateOnly(2026, 11, 26), s);
         var g = Assert.Single(w.Goals);
         Assert.Equal("Empleo", g.Category);
