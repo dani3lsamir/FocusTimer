@@ -41,6 +41,20 @@ public static class Categories
         return null;
     }
 
+    /// <summary>
+    /// Quita la categoría de los ajustes. El CSV no se toca: sus sesiones pasadas siguen ahí y se muestran
+    /// con el nombre que tenían. Siempre queda al menos una categoría.
+    /// </summary>
+    public static string? Remove(AppSettings s, string id)
+    {
+        if (s.Categories.Count <= 1) return "Keep at least one category.";
+        int i = s.Categories.FindIndex(c => c.Id == id);
+        if (i < 0) return "Category not found.";
+        s.Categories.RemoveAt(i);
+        if (s.LastCategoryId == id) s.LastCategoryId = s.Categories[0].Id;
+        return null;
+    }
+
     /// <summary>Mueve la categoría delta posiciones (-1 sube, +1 baja).</summary>
     public static bool Move(AppSettings s, string id, int delta)
     {

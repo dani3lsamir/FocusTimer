@@ -49,6 +49,13 @@ public sealed class Countdown
         return true;
     }
 
+    /// <summary>Vuelve a empezar con la misma duración (desde cualquier estado).</summary>
+    internal void Restart(DateTimeOffset now)
+    {
+        _deadline = now + Duration;
+        State = CountdownState.Running;
+    }
+
     internal bool CheckDue(DateTimeOffset now)
     {
         if (State != CountdownState.Running || now < _deadline) return false;
@@ -89,6 +96,14 @@ public sealed class CountdownBoard(IClock clock)
     public bool Pause(int id) => Find(id)?.Pause(clock.Now) ?? false;
     public bool Resume(int id) => Find(id)?.Resume(clock.Now) ?? false;
     public bool Remove(int id) => _items.RemoveAll(c => c.Id == id) > 0;
+
+    /// <summary>Repite el timer con el mismo nombre y duración (p. ej. otro huevo).</summary>
+    public bool Restart(int id)
+    {
+        if (Find(id) is not { } c) return false;
+        c.Restart(clock.Now);
+        return true;
+    }
 
     /// <summary>El timer en marcha que termina antes (para el título y la barra de tareas).</summary>
     public Countdown? NextDue() => _items.Where(c => c.State == CountdownState.Running)

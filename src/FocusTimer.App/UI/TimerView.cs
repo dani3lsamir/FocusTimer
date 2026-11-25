@@ -51,6 +51,7 @@ internal sealed class TimerView : UserControl
         _stop = Theme.Button("Stop");
         _skip = Theme.Button("Skip break");
         _tips.SetToolTip(_stop, "Ends the pomodoro and saves it as incomplete");
+        _tips.SetToolTip(_pause, "Space");
         _start.Click += (_, _) => StartClicked?.Invoke(this, EventArgs.Empty);
         _pause.Click += (_, _) => PauseClicked?.Invoke(this, EventArgs.Empty);
         _stop.Click += (_, _) => StopClicked?.Invoke(this, EventArgs.Empty);

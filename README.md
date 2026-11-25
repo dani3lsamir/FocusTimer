@@ -21,11 +21,15 @@ Pequeño, **100 % sin conexión** y con muy poca memoria. Hecho en C# + .NET 10 
   - **Timers guardados** con nombre, como «Eggs · 6:30»: un clic los inicia y clic derecho los edita o elimina.
   - La duración se escribe libremente: `10` (min), `6:30`, `6.5`, `1:15:00`, `90s` o `2h`.
   - Se pueden pausar y quitar. Al terminar avisan igual que el Pomodoro: notificación y parpadeo.
+    Un timer terminado tiene el botón **↻ Again** para repetirlo con el mismo nombre y tiempo.
   - **No se registran** en `sessions.csv` ni cuentan para metas. Si cierras la app con timers corriendo, te lo pregunta antes.
 - **Metas**: meta diaria de pomodoros (por defecto 8) y metas semanales opcionales en minutos por categoría.
 - **Dashboard**: resumen de hoy (minutos, pomodoros frente a la meta, desglose por categoría), gráfico semanal apilado por categoría,
   metas semanales y **racha** de días cumpliendo la meta diaria.
-- **Settings**: duraciones, categorías (añadir, renombrar y reordenar; por defecto *Work*, *Study* y *Personal*), metas, *Start with Windows* y *Open data folder*.
+- **Settings**: duraciones, categorías (añadir, renombrar, reordenar y borrar; por defecto *Work*, *Study* y *Personal*), metas, *Start with Windows* y *Open data folder*.
+  Borrar una categoría no toca el CSV: sus sesiones pasadas siguen ahí y se muestran con su nombre.
+- **Atajos de teclado**: `Ctrl+1` … `Ctrl+4` cambian de pestaña. `Espacio` pausa o reanuda el pomodoro
+  en la pestaña Pomodoro, salvo mientras escribes en un campo.
 - **Tema AMOLED**: fondo negro puro, barra de título oscura y un solo color de acento. La ventana recuerda su posición.
 
 ### Reglas de cálculo

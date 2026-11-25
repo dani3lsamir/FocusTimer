@@ -206,6 +206,32 @@ internal sealed class MainForm : Form
         base.OnFormClosing(e);
     }
 
+    /// <summary>Ctrl+1…4 cambia de pestaña. Espacio pausa/reanuda el pomodoro (en la pestaña Pomodoro, sin estar escribiendo).</summary>
+    protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+    {
+        if (keyData is >= (Keys.Control | Keys.D1) and <= (Keys.Control | Keys.D4))
+        {
+            int page = (int)(keyData & ~Keys.Control) - (int)Keys.D1;
+            if (page < _pages.Length) { ShowPage(page); return true; }
+        }
+        if (keyData == Keys.Space && _timerView.Visible && _engine.Phase != Phase.Idle && !IsTyping())
+        {
+            if (_engine.IsPaused) _engine.Resume(); else _engine.Pause();
+            SaveCheckpoint();
+            RefreshTimer();
+            return true;
+        }
+        return base.ProcessCmdKey(ref msg, keyData);
+    }
+
+    /// <summary>True si el foco está en un campo de texto (ahí Espacio debe escribir un espacio).</summary>
+    private bool IsTyping()
+    {
+        Control? c = ActiveControl;
+        while (c is ContainerControl { ActiveControl: { } inner }) c = inner;
+        return c is TextBoxBase or ComboBox or NumericUpDown or UpDownBase;
+    }
+
     protected override void WndProc(ref Message m)
     {
         if (m.Msg == (int)TaskbarButtonCreated && TaskbarButtonCreated != 0)

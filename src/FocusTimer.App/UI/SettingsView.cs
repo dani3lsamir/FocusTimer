@@ -35,7 +35,7 @@ internal sealed class SettingsView : UserControl
         _daily = Num(1, 50, 1);
         _weekly = Num(0, 10080, 30);
 
-        _cats = new ListBox { Height = 104, IntegralHeight = false, Dock = DockStyle.Fill, Margin = new Padding(0) };
+        _cats = new ListBox { Height = 124, IntegralHeight = false, Dock = DockStyle.Fill, Margin = new Padding(0) };
         Theme.StyleInput(_cats);
         _cats.SelectedIndexChanged += (_, _) => OnCategorySelected();
 
@@ -105,13 +105,19 @@ internal sealed class SettingsView : UserControl
         Field("Daily goal (completed pomodoros)", _daily);
 
         Section("Categories");
-        var catRow = new TableLayoutPanel { ColumnCount = 2, Height = 104, Dock = DockStyle.Top, Margin = new Padding(0), BackColor = Theme.Back };
+        var catRow = new TableLayoutPanel { ColumnCount = 2, Height = 124, Dock = DockStyle.Top, Margin = new Padding(0), BackColor = Theme.Back };
         catRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         catRow.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 44));
         var arrows = new FlowLayoutPanel { FlowDirection = FlowDirection.TopDown, Dock = DockStyle.Fill, Margin = new Padding(6, 0, 0, 0), BackColor = Theme.Back };
         var up = Theme.Button("▲"); up.Width = 38; up.Click += (_, _) => MoveSelected(-1);
         var down = Theme.Button("▼"); down.Width = 38; down.Click += (_, _) => MoveSelected(+1);
-        arrows.Controls.AddRange([up, down]);
+        var del = Theme.Button("✕"); del.Width = 38; del.Click += (_, _) => DeleteSelected();
+        var tips = new ToolTip();
+        tips.SetToolTip(up, "Move up");
+        tips.SetToolTip(down, "Move down");
+        tips.SetToolTip(del, "Delete category");
+        Disposed += (_, _) => tips.Dispose();
+        arrows.Controls.AddRange([up, down, del]);
         catRow.Controls.Add(_cats, 0, 0);
         catRow.Controls.Add(arrows, 1, 0);
         Full(catRow);
@@ -239,6 +245,21 @@ internal sealed class SettingsView : UserControl
         var err = Categories.Rename(_s, c.Id, _name.Text);
         if (err is not null) { _catError.Text = err; return; }
         RefreshCategoryList(c.Id);
+        SettingsChanged?.Invoke(true);
+    }
+
+    private void DeleteSelected()
+    {
+        if (Selected is not { } c) return;
+        if (_s.Categories.Count <= 1) { _catError.Text = "Keep at least one category."; return; }
+        var answer = MessageBox.Show(FindForm(),
+            $"Delete the category \"{c.Name}\"?\n\nPast sessions stay in sessions.csv and keep showing under their old name.",
+            "FocusTimer", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
+        if (answer != DialogResult.Yes) return;
+        var err = Categories.Remove(_s, c.Id);
+        if (err is not null) { _catError.Text = err; return; }
+        int index = Math.Min(_cats.SelectedIndex, _s.Categories.Count - 1);
+        RefreshCategoryList(_s.Categories[Math.Max(0, index)].Id);
         SettingsChanged?.Invoke(true);
     }
 

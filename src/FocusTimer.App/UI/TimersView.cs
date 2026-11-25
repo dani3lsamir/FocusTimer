@@ -224,6 +224,12 @@ internal sealed class TimersView : UserControl
                     UpdateRows();
                     BoardChanged?.Invoke(this, EventArgs.Empty);
                 };
+                row.RestartClicked += (_, _) =>
+                {
+                    _board.Restart(c.Id);
+                    UpdateRows();
+                    BoardChanged?.Invoke(this, EventArgs.Empty);
+                };
                 row.RemoveClicked += (_, _) =>
                 {
                     _board.Remove(c.Id);
@@ -266,11 +272,12 @@ internal sealed class TimersView : UserControl
 /// </summary>
 internal sealed class TimerRow : UserControl
 {
-    public event EventHandler? PauseClicked, RemoveClicked;
+    public event EventHandler? PauseClicked, RestartClicked, RemoveClicked;
 
     private readonly Countdown _c;
     private readonly Label _name, _time;
-    private readonly Button _pause, _remove;
+    private readonly Button _pause, _restart, _remove;
+    private readonly ToolTip _tips = new();
     private readonly ThinBar _bar = new();
 
     public TimerRow(Countdown c)
@@ -281,10 +288,15 @@ internal sealed class TimerRow : UserControl
         _time = new Label { AutoSize = false, Font = Theme.Heading, ForeColor = Theme.Text, TextAlign = ContentAlignment.MiddleLeft };
         _pause = Theme.Button("Pause");
         _remove = Theme.Button("✕");
+        _restart = Theme.Button("↻ Again");
+        _restart.Visible = false;
+        _tips.SetToolTip(_restart, "Run this timer again");
+        _tips.SetToolTip(_remove, "Remove");
+        _restart.Click += (_, _) => RestartClicked?.Invoke(this, EventArgs.Empty);
         _pause.Click += (_, _) => PauseClicked?.Invoke(this, EventArgs.Empty);
         _remove.Click += (_, _) => RemoveClicked?.Invoke(this, EventArgs.Empty);
         _bar.Dock = DockStyle.Bottom;
-        Controls.AddRange([_name, _time, _pause, _remove, _bar]);
+        Controls.AddRange([_name, _time, _pause, _restart, _remove, _bar]);
         LayoutRow();
     }
 
@@ -311,7 +323,8 @@ internal sealed class TimerRow : UserControl
         int top = (ClientSize.Height - _bar.Height - btnH) / 2;
         _remove.Bounds = new Rectangle(w - S(34) - S(8), top, S(34), btnH);
         _pause.Bounds = new Rectangle(_remove.Left - S(82) - S(6), top, S(82), btnH);
-        int right = (_pause.Visible ? _pause.Left : _remove.Left) - S(8);
+        _restart.Bounds = _pause.Bounds; // ocupa el lugar de Pausar cuando el timer terminó
+        int right = _pause.Left - S(8);
         int textW = Math.Max(S(40), right - S(10));
         _name.Bounds = new Rectangle(S(10), S(6), textW, S(20));
         _time.Bounds = new Rectangle(S(10), S(27), textW, S(26));
@@ -327,11 +340,17 @@ internal sealed class TimerRow : UserControl
         if (_pause.Visible == finished)
         {
             _pause.Visible = !finished;
-            LayoutRow();
+            _restart.Visible = finished;
         }
         string pauseText = paused ? "Resume" : "Pause";
         if (_pause.Text != pauseText) _pause.Text = pauseText;
         _bar.Set(finished ? 1 : fraction, finished ? Theme.Accent : paused ? Theme.Muted : Theme.Categories[1]);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) _tips.Dispose();
+        base.Dispose(disposing);
     }
 }
 
