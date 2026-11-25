@@ -42,7 +42,7 @@ public sealed class PomodoroEngine(IClock clock)
     public bool IsPaused { get; private set; }
     public bool IsBreak => Phase is Phase.ShortBreak or Phase.LongBreak;
     public TimeSpan PlannedDuration { get; private set; }
-    /// <summary>Pomodoros completados desde que se abrió la app (define cuándo toca descanso largo).</summary>
+    /// <summary>Pomodoros completados (define cuándo toca descanso largo).</summary>
     public int CompletedFocusCount { get; private set; }
     public string Category { get; private set; } = "";
     public string Task { get; private set; } = "";
@@ -123,6 +123,12 @@ public sealed class PomodoroEngine(IClock clock)
         while (Phase != Phase.Idle && !IsPaused && clock.Now >= _deadline)
             CompletePhase(_deadline);
     }
+
+    /// <summary>
+    /// Fija cuántos pomodoros se completaron (p. ej. los de hoy al abrir la app), para que cerrar y
+    /// reabrir no reinicie la cuenta hacia el descanso largo.
+    /// </summary>
+    public void SeedCompletedCount(int count) => CompletedFocusCount = Math.Max(0, count);
 
     /// <summary>Datos del enfoque en curso, o null si no hay.</summary>
     public ActiveFocus? Snapshot()

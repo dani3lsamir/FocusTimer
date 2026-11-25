@@ -38,7 +38,10 @@ public static class Csv
             }
             switch (ch)
             {
-                case '"': inQuotes = true; break;
+                case '"':
+                    // Solo abre comillas al inicio del campo; una comilla suelta en medio es texto.
+                    if (field.Length == 0) inQuotes = true; else field.Append(ch);
+                    break;
                 case ',': row.Add(field.ToString()); field.Clear(); break;
                 case '\r': break;
                 case '\n':

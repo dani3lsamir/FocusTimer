@@ -113,27 +113,39 @@ public sealed class TimerPreset
     public override string ToString() => $"{Name} · {DurationText.Format(TimeSpan.FromSeconds(Seconds))}";
 }
 
-/// <summary>Lee y muestra duraciones: "10" = 10 min, "6:30", "1:15:00", "6.5", "90s", "2h", "45m".</summary>
+/// <summary>Lee y muestra duraciones: "10" = 10 min, "6:30", "1:15:00", "6.5", "90s", "2h", "45m", "1h30m".</summary>
 public static class DurationText
 {
     public static readonly TimeSpan Min = TimeSpan.FromSeconds(1);
     public static readonly TimeSpan Max = TimeSpan.FromHours(24);
 
+    /// <summary>Nunca lanza excepciones: cualquier texto fuera de rango devuelve false.</summary>
     public static bool TryParse(string? text, out TimeSpan duration)
     {
         duration = TimeSpan.Zero;
         var t = (text ?? "").Trim().ToLowerInvariant().Replace(" ", "").Replace(',', '.');
-        if (t.Length == 0) return false;
+        if (t.Length == 0 || t.Length > 20) return false;
 
+        double seconds;
         if (t.Contains(':'))
         {
+            // m:ss o h:mm:ss
             var parts = t.Split(':');
-            if (parts.Length > 3 || parts.Any(p => p.Length == 0 || !p.All(char.IsAsciiDigit))) return false;
-            var n = parts.Select(int.Parse).ToArray();
+            if (parts.Length > 3) return false;
+            var n = new long[parts.Length];
+            for (int i = 0; i < parts.Length; i++)
+                if (!TryDigits(parts[i], out n[i])) return false;
             if (n.Skip(1).Any(v => v >= 60)) return false;
-            duration = n.Length == 2
-                ? new TimeSpan(0, n[0], n[1])
-                : new TimeSpan(n[0], n[1], n[2]);
+            seconds = n.Length == 2 ? n[0] * 60 + n[1] : n[0] * 3600 + n[1] * 60 + n[2];
+        }
+        else if (t.IndexOf('h') is int h and > 0 && h < t.Length - 1)
+        {
+            // compuesto: 1h30, 1h30m, 1h30min
+            var rest = t[(h + 1)..];
+            if (rest.EndsWith("min")) rest = rest[..^3];
+            else if (rest.EndsWith('m')) rest = rest[..^1];
+            if (!TryDigits(t[..h], out var hours) || !TryDigits(rest, out var mins) || mins >= 60) return false;
+            seconds = hours * 3600 + mins * 60;
         }
         else
         {
@@ -142,16 +154,28 @@ public static class DurationText
             else if (t.EndsWith('m')) t = t[..^1];
             else if (t.EndsWith('s')) { factor = 1; t = t[..^1]; }
             else if (t.EndsWith('h')) { factor = 3600; t = t[..^1]; }
-            if (!double.TryParse(t, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var v)) return false;
-            duration = TimeSpan.FromSeconds(Math.Round(v * factor));
+            if (!double.TryParse(t, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var v) || !double.IsFinite(v))
+                return false;
+            seconds = Math.Round(v * factor);
         }
-        return duration >= Min && duration <= Max;
+        if (seconds < Min.TotalSeconds || seconds > Max.TotalSeconds) return false;
+        duration = TimeSpan.FromSeconds(seconds);
+        return true;
+    }
+
+    /// <summary>Solo dígitos ASCII, como máximo 9 (sin desbordes).</summary>
+    private static bool TryDigits(string s, out long value)
+    {
+        value = 0;
+        if (s.Length is 0 or > 9 || !s.All(char.IsAsciiDigit)) return false;
+        value = long.Parse(s, CultureInfo.InvariantCulture);
+        return true;
     }
 
     /// <summary>"10 min", "6:30", "1 h 30 min", "1:05:30".</summary>
     public static string Format(TimeSpan d)
     {
-        int s = (int)Math.Round(d.TotalSeconds);
+        int s = Math.Max(0, (int)Math.Round(d.TotalSeconds));
         if (s % 60 == 0)
         {
             int m = s / 60;
@@ -160,10 +184,19 @@ public static class DurationText
         return s < 3600 ? $"{s / 60}:{s % 60:00}" : $"{s / 3600}:{s / 60 % 60:00}:{s % 60:00}";
     }
 
+    /// <summary>Texto para editar: siempre se puede volver a leer con <see cref="TryParse"/> ("10", "6:30", "1:30:00", "45s").</summary>
+    public static string ToInput(TimeSpan d)
+    {
+        int s = Math.Max(1, (int)Math.Round(d.TotalSeconds));
+        if (s < 60) return $"{s}s";
+        if (s < 3600) return s % 60 == 0 ? $"{s / 60}" : $"{s / 60}:{s % 60:00}";
+        return $"{s / 3600}:{s / 60 % 60:00}:{s % 60:00}";
+    }
+
     /// <summary>Cuenta atrás para mostrar: "9:58" o "1:02:03".</summary>
     public static string Clock(TimeSpan d)
     {
-        int s = (int)Math.Ceiling(d.TotalSeconds);
+        int s = Math.Max(0, (int)Math.Ceiling(d.TotalSeconds));
         return s >= 3600 ? $"{s / 3600}:{s / 60 % 60:00}:{s % 60:00}" : $"{s / 60}:{s % 60:00}";
     }
 }

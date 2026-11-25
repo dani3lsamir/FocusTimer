@@ -35,29 +35,53 @@ public static class Stats
 
     public static DaySummary Day(IEnumerable<SessionRecord> records, DateOnly date, AppSettings s)
     {
-        var day = new DaySummary(date);
-        foreach (var c in s.Categories) day.MinutesByCategory[c.Name] = 0;
+        var day = EmptyDay(date, s);
+        var resolve = Resolver(s);
         foreach (var r in records)
-        {
-            if (DayOf(r) != date) continue;
-            day.FocusMinutes += r.ActualMin;
-            if (r.Completed) day.CompletedPomodoros++;
-            var key = Categories.DisplayName(s, r.Category);
-            day.MinutesByCategory[key] = day.MinutesByCategory.GetValueOrDefault(key) + r.ActualMin;
-        }
+            if (DayOf(r) == date) Add(day, r, resolve);
         return day;
     }
 
     public static WeekSummary Week(IReadOnlyCollection<SessionRecord> records, DateOnly anyDay, AppSettings s)
     {
         var monday = WeekStart(anyDay);
-        var inWeek = records.Where(r => DayOf(r) >= monday && DayOf(r) < monday.AddDays(7)).ToList();
-        var days = Enumerable.Range(0, 7).Select(i => Day(inWeek, monday.AddDays(i), s)).ToArray();
+        var days = Enumerable.Range(0, 7).Select(i => EmptyDay(monday.AddDays(i), s)).ToArray();
+        var resolve = Resolver(s);
+        foreach (var r in records)
+        {
+            int i = DayOf(r).DayNumber - monday.DayNumber;
+            if (i is >= 0 and < 7) Add(days[i], r, resolve);
+        }
         var goals = s.Categories.Where(c => c.WeeklyGoalMinutes > 0)
             .Select(c => new CategoryGoal(c.Name, c.WeeklyGoalMinutes,
                 days.Sum(d => d.MinutesByCategory.GetValueOrDefault(c.Name))))
             .ToList();
         return new WeekSummary(monday, days, goals);
+    }
+
+    private static DaySummary EmptyDay(DateOnly date, AppSettings s)
+    {
+        var day = new DaySummary(date);
+        foreach (var c in s.Categories) day.MinutesByCategory[c.Name] = 0;
+        return day;
+    }
+
+    /// <summary>Nombre CSV → nombre actual. Mismas reglas que <see cref="Categories.DisplayName"/>.</summary>
+    private static Func<string, string> Resolver(AppSettings s)
+    {
+        var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var c in s.Categories)
+            foreach (var a in c.Aliases) map.TryAdd(a.Trim(), c.Name);
+        foreach (var c in s.Categories) map[c.Name.Trim()] = c.Name; // el nombre actual gana al alias
+        return name => map.TryGetValue((name ?? "").Trim(), out var n) ? n : Categories.DisplayName(s, name ?? "");
+    }
+
+    private static void Add(DaySummary day, SessionRecord r, Func<string, string> resolve)
+    {
+        day.FocusMinutes += r.ActualMin;
+        if (r.Completed) day.CompletedPomodoros++;
+        var key = resolve(r.Category);
+        day.MinutesByCategory[key] = day.MinutesByCategory.GetValueOrDefault(key) + r.ActualMin;
     }
 
     public static Dictionary<DateOnly, int> CompletedPerDay(IEnumerable<SessionRecord> records) =>
