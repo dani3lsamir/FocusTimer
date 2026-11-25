@@ -19,6 +19,8 @@ internal static partial class Win32
     private const int DWMWA_USE_IMMERSIVE_DARK_MODE_OLD = 19, DWMWA_USE_IMMERSIVE_DARK_MODE = 20,
         DWMWA_BORDER_COLOR = 34, DWMWA_CAPTION_COLOR = 35;
     public static readonly IntPtr HWND_BROADCAST = new(0xffff);
+    /// <summary>Lo envía una segunda instancia para traer al frente la ventana ya abierta.</summary>
+    public static readonly uint ShowWindowMessage = RegisterWindowMessage("FocusTimer.ShowWindow");
 
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -37,6 +39,10 @@ internal static partial class Win32
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool AllowSetForegroundWindow(int processId);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool SetForegroundWindow(IntPtr hwnd);
 
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]

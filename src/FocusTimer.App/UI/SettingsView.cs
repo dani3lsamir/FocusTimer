@@ -146,6 +146,7 @@ internal sealed class SettingsView : UserControl
 
         foreach (var n in new[] { _focus, _short, _long, _every, _daily }) n.ValueChanged += (_, _) => OnNumbersChanged();
         _weekly.ValueChanged += (_, _) => OnWeeklyChanged();
+        // Enter solo añade (renombrar es explícito con el botón, para no renombrar por accidente).
         _name.KeyDown += (_, e) => { if (e.KeyCode == Keys.Enter) { AddCategory(); e.SuppressKeyPress = true; } };
 
         LoadValues();
@@ -177,14 +178,16 @@ internal sealed class SettingsView : UserControl
         _loading = true;
         _cats.BeginUpdate();
         _cats.Items.Clear();
-        foreach (var c in _s.Categories)
-            _cats.Items.Add(c.WeeklyGoalMinutes > 0 ? $"{c.Name}   ·   goal {Theme.Minutes(c.WeeklyGoalMinutes)}/wk" : c.Name);
+        foreach (var c in _s.Categories) _cats.Items.Add(ItemText(c));
         _cats.EndUpdate();
         int idx = _s.Categories.FindIndex(c => c.Id == selectId);
         _cats.SelectedIndex = idx >= 0 ? idx : (_s.Categories.Count > 0 ? 0 : -1);
         _loading = wasLoading;
         OnCategorySelected();
     }
+
+    private static string ItemText(CategoryDef c) =>
+        c.WeeklyGoalMinutes > 0 ? $"{c.Name}   ·   goal {Theme.Minutes(c.WeeklyGoalMinutes)}/wk" : c.Name;
 
     private CategoryDef? Selected =>
         _cats.SelectedIndex >= 0 && _cats.SelectedIndex < _s.Categories.Count ? _s.Categories[_cats.SelectedIndex] : null;
@@ -216,8 +219,10 @@ internal sealed class SettingsView : UserControl
     {
         if (_loading || Selected is not { } c) return;
         c.WeeklyGoalMinutes = (int)_weekly.Value;
-        RefreshCategoryList(c.Id);
-        SettingsChanged?.Invoke(true);
+        _loading = true;
+        _cats.Items[_cats.SelectedIndex] = ItemText(c); // solo actualiza esa línea
+        _loading = false;
+        SettingsChanged?.Invoke(false);
     }
 
     private void AddCategory()
@@ -246,7 +251,11 @@ internal sealed class SettingsView : UserControl
 
     private void OpenDataFolder()
     {
-        Directory.CreateDirectory(_dataFolder);
-        using var _ = Process.Start(new ProcessStartInfo("explorer.exe", "\"" + _dataFolder + "\"") { UseShellExecute = false });
+        try
+        {
+            Directory.CreateDirectory(_dataFolder);
+            using var _ = Process.Start(new ProcessStartInfo("explorer.exe", "\"" + _dataFolder + "\"") { UseShellExecute = false });
+        }
+        catch (Exception e) { _catError.Text = "Couldn't open the folder: " + e.Message; }
     }
 }

@@ -6,7 +6,6 @@ namespace FocusTimer.App.UI;
 /// <summary>Ventana única con tres pestañas. Conecta el motor del temporizador con la UI, el CSV y Windows.</summary>
 internal sealed class MainForm : Form
 {
-    public static readonly uint ShowMessage = Win32.RegisterWindowMessage("FocusTimer.ShowWindow");
     private static readonly uint TaskbarButtonCreated = Win32.RegisterWindowMessage("TaskbarButtonCreated");
     private static readonly TimeSpan CheckpointEvery = TimeSpan.FromSeconds(30);
 
@@ -19,6 +18,8 @@ internal sealed class MainForm : Form
     private readonly List<SessionRecord> _records;
     private readonly TaskbarProgress _taskbar = new();
     private readonly System.Windows.Forms.Timer _timer = new();
+    /// <summary>Agrupa cambios seguidos de ajustes (p. ej. flechas de un número) en una sola escritura.</summary>
+    private readonly System.Windows.Forms.Timer _saveTimer = new() { Interval = 500 };
 
     private readonly TimerView _timerView = new();
     private readonly TimersView _timersView;
@@ -44,6 +45,9 @@ internal sealed class MainForm : Form
         if (skipped > 0) startupNote += $" {skipped} damaged row(s) in sessions.csv were ignored (not deleted).";
 
         _engine.Durations = _settings.ToDurations();
+        // Cerrar y reabrir el mismo día no reinicia la cuenta hacia el descanso largo.
+        _engine.SeedCompletedCount(Stats.Day(_records, DateOnly.FromDateTime(DateTime.Now), _settings).CompletedPomodoros);
+        _saveTimer.Tick += (_, _) => { _saveTimer.Stop(); SaveSettings(); };
         _engine.SessionFinished += OnSessionFinished;
         _engine.PhaseCompleted += OnPhaseCompleted;
         _board.Finished += OnCountdownFinished;
@@ -112,12 +116,12 @@ internal sealed class MainForm : Form
         string note = "";
         try
         {
-            if (_checkpoint.Recover(_log.Main) is { } r)
+            if (_checkpoint.Recover(_log) is { } r)
                 note = $"Recovered an interrupted pomodoro ({Theme.Minutes(r.ActualMin)}), saved as incomplete.";
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            note = "Couldn't recover the interrupted session yet (is sessions.csv open?). Will retry next time.";
+            note = "Couldn't recover the interrupted session yet (data folder not writable?). Will retry next time.";
         }
         _log.TryFlushPending();
         // Icono para los toasts (se copia del recurso embebido a la carpeta de datos, local).
@@ -195,6 +199,7 @@ internal sealed class MainForm : Form
             _settings.WindowX = Left;
             _settings.WindowY = Top;
         }
+        _saveTimer.Stop();
         SaveSettings();
         _timer.Stop();
         _taskbar.Dispose();
@@ -208,10 +213,11 @@ internal sealed class MainForm : Form
             _taskbar.Reset();
             UpdateTaskbar();
         }
-        else if (m.Msg == (int)ShowMessage && ShowMessage != 0)
+        else if (m.Msg == (int)Win32.ShowWindowMessage && Win32.ShowWindowMessage != 0)
         {
             if (WindowState == FormWindowState.Minimized) WindowState = FormWindowState.Normal;
             Activate();
+            Win32.SetForegroundWindow(Handle);
         }
         base.WndProc(ref m);
     }
@@ -241,7 +247,8 @@ internal sealed class MainForm : Form
         if (_timersView.Visible) _timersView.UpdateRows();
         RefreshTimer();
         var now = DateTime.Now;
-        if (_engine.Phase == Phase.Focus && now - _lastCheckpoint >= CheckpointEvery) SaveCheckpoint();
+        // En pausa no se escribe nada (el checkpoint ya se guardó al pausar).
+        if (_engine.Phase == Phase.Focus && !_engine.IsPaused && now - _lastCheckpoint >= CheckpointEvery) SaveCheckpoint();
         if (DateOnly.FromDateTime(now) != _statsDay) RefreshStats(); // pasó la medianoche
         if (_log.HasPending && now - _lastPendingTry > TimeSpan.FromMinutes(1))
         {
@@ -294,9 +301,13 @@ internal sealed class MainForm : Form
     private void OnSettingsChanged(bool categoriesChanged)
     {
         _settings.Normalize();
-        _engine.Durations = _settings.ToDurations(); // se aplica desde la próxima fase
+        _engine.Durations = _settings.ToDurations();
+        // Cerrar y reabrir el mismo día no reinicia la cuenta hacia el descanso largo.
+        _engine.SeedCompletedCount(Stats.Day(_records, DateOnly.FromDateTime(DateTime.Now), _settings).CompletedPomodoros);
+        _saveTimer.Tick += (_, _) => { _saveTimer.Stop(); SaveSettings(); }; // se aplica desde la próxima fase
         if (categoriesChanged) _timerView.SetCategories(_settings, _timerView.SelectedCategoryId);
-        SaveSettings();
+        _saveTimer.Stop();
+        _saveTimer.Start();
         RefreshStats();
         RefreshTimer();
     }
@@ -322,12 +333,11 @@ internal sealed class MainForm : Form
         var day = Stats.Day(_records, today, _settings);
         var week = Stats.Week(_records, today, _settings);
         int streak = Stats.Streak(_records, today, _settings.DailyGoalPomodoros);
-        _timerView.Goals.Width = _timerView.ClientSize.Width - 32;
         _timerView.Goals.SetData(day, _settings.DailyGoalPomodoros, streak, week, _settings);
         if (_dashboardHost.Visible)
         {
             _dashboard.Width = _dashboardHost.ClientSize.Width - (_dashboardHost.VerticalScroll.Visible ? 0 : SystemInformation.VerticalScrollBarWidth);
-            _dashboard.SetData(_records, _settings, today);
+            _dashboard.SetData(day, week, streak, _settings); // mismos cálculos, sin repetirlos
         }
     }
 
@@ -346,21 +356,24 @@ internal sealed class MainForm : Form
             string what = _engine.IsPaused ? "paused" : _engine.Phase == Phase.Focus ? "focus" : "break";
             parts.Add($"{min} min · {what}");
         }
-        if (_board.NextDue() is { } next)
+        var next = _board.NextDue();
+        if (next is not null)
         {
             int others = _board.Items.Count(c => c.State == CountdownState.Running) - 1;
             parts.Add($"{next.Label} {DurationText.Clock(_board.Remaining(next))}" + (others > 0 ? $" (+{others})" : ""));
         }
         string title = parts.Count == 0 ? "FocusTimer" : string.Join("  |  ", parts) + " – FocusTimer";
         if (Text != title) Text = title;
-        UpdateTaskbar();
+        UpdateTaskbar(next);
     }
 
-    private void UpdateTaskbar()
+    private void UpdateTaskbar() => UpdateTaskbar(_board.NextDue());
+
+    private void UpdateTaskbar(Countdown? next)
     {
         if (!IsHandleCreated) return;
         // El Pomodoro tiene prioridad; si no hay, se muestra el timer que termina antes.
-        if (_engine.Phase == Phase.Idle && _board.NextDue() is { } next)
+        if (_engine.Phase == Phase.Idle && next is not null)
         {
             _taskbar.Set(Handle, TaskbarState.Focus, _board.Fraction(next));
             return;
@@ -394,7 +407,7 @@ internal sealed class MainForm : Form
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing) { _timer.Dispose(); _taskbar.Dispose(); }
+        if (disposing) { _timer.Dispose(); _saveTimer.Dispose(); _taskbar.Dispose(); }
         base.Dispose(disposing);
     }
 }

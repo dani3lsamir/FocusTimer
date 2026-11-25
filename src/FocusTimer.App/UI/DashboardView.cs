@@ -14,12 +14,13 @@ internal sealed class DashboardView : PaintedControl
     private List<(string Name, Color Color)> _legend = [];
     private DateOnly _todayDate;
 
-    public void SetData(IReadOnlyCollection<SessionRecord> records, AppSettings s, DateOnly today)
+    /// <summary>Recibe los resúmenes ya calculados (no recalcula nada).</summary>
+    public void SetData(DaySummary today, WeekSummary week, int streak, AppSettings s)
     {
-        _todayDate = today;
-        _today = Stats.Day(records, today, s);
-        _week = Stats.Week(records, today, s);
-        _streak = Stats.Streak(records, today, s.DailyGoalPomodoros);
+        _todayDate = today.Date;
+        _today = today;
+        _week = week;
+        _streak = streak;
         _dailyGoal = s.DailyGoalPomodoros;
         _focusMin = s.FocusMinutes;
         // Orden y color: categorías de los ajustes y luego nombres antiguos sin categoría actual (gris).
@@ -28,6 +29,12 @@ internal sealed class DashboardView : PaintedControl
             if (_legend.All(l => l.Name != name)) _legend.Add((name, Theme.Other));
         Height = Render(null);
         Invalidate();
+    }
+
+    protected override void OnSizeChanged(EventArgs e)
+    {
+        base.OnSizeChanged(e);
+        if (_today is not null && Render(null) is var h && h != Height) Height = h; // la leyenda puede ocupar más líneas
     }
 
     protected override void OnPaint(PaintEventArgs e)
@@ -158,8 +165,13 @@ internal sealed class DashboardView : PaintedControl
         int gy = plot.Bottom - (int)Math.Round(goalMinutes / max * plot.Height);
         using (var pen = new Pen(Theme.Muted) { DashStyle = DashStyle.Dash })
             g.DrawLine(pen, plot.Left, gy, plot.Right, gy);
-        Draw(g, $"goal {goalMinutes:0} min", Theme.Small, new Rectangle(plot.Left, gy - labelH, plot.Width, labelH),
-            Theme.Muted, TextFormatFlags.Right);
+        // Etiqueta de la meta: en el extremo con la barra más baja y con fondo negro, para no tapar los números.
+        string goalLabel = $"goal {goalMinutes:0} min";
+        int lw = TextRenderer.MeasureText(goalLabel, Theme.Small).Width + S(4);
+        bool left = days[0].FocusMinutes <= days[6].FocusMinutes;
+        var lr = new Rectangle(left ? plot.Left : plot.Right - lw, Math.Max(area.Top, gy - labelH), lw, labelH);
+        using (var bg = new SolidBrush(Theme.Back)) g.FillRectangle(bg, lr);
+        Draw(g, goalLabel, Theme.Small, lr, Theme.Muted, TextFormatFlags.HorizontalCenter);
     }
 
     private void Heading(Graphics? g, string text, int x, ref int y, int w)

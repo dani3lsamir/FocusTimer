@@ -23,6 +23,7 @@ internal sealed class TimerView : UserControl
         BackColor = Theme.Back;
         ForeColor = Theme.Text;
         Padding = new Padding(16, 4, 16, 8);
+        AutoScroll = true; // con muchas categorías o metas semanales, nada se recorta
 
         _phase = Theme.Label("Ready", Theme.Bold, Theme.Muted);
         _phase.Anchor = AnchorStyles.None;
@@ -73,7 +74,11 @@ internal sealed class TimerView : UserControl
         _status = Theme.Label("", Theme.Small, Theme.Muted);
         _status.MaximumSize = new Size(348, 0);
 
-        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, BackColor = Theme.Back };
+        var layout = new TableLayoutPanel
+        {
+            Dock = DockStyle.Top, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            ColumnCount = 1, BackColor = Theme.Back,
+        };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         Control[] rows =
         [
@@ -85,7 +90,6 @@ internal sealed class TimerView : UserControl
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             layout.Controls.Add(c);
         }
-        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         Controls.Add(layout);
     }
 

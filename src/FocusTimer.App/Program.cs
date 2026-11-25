@@ -14,9 +14,12 @@ internal static class Program
         if (!isFirst)
         {
             Win32.AllowSetForegroundWindow(-1); // ASFW_ANY: deja que la instancia abierta pase al frente
-            Win32.PostMessage(Win32.HWND_BROADCAST, MainForm.ShowMessage, 0, 0);
+            Win32.PostMessage(Win32.HWND_BROADCAST, Win32.ShowWindowMessage, 0, 0);
             return;
         }
+
+        // Antes de crear cualquier ventana: identidad para la barra de tareas y las notificaciones.
+        Win32.SetCurrentProcessExplicitAppUserModelID(Toast.AppId);
 
         var paths = DataPaths.Default();
         paths.EnsureExists();

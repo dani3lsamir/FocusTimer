@@ -18,6 +18,9 @@ internal sealed unsafe class TaskbarProgress : IDisposable
     private const ulong Scale = 10_000;
 
     private IntPtr _ptr;
+    private IntPtr _lastHwnd;
+    private int _lastFlag = -1;
+    private ulong _lastValue = ulong.MaxValue;
 
     [DllImport("ole32.dll")]
     private static extern int CoCreateInstance(in Guid clsid, IntPtr outer, uint ctx, in Guid iid, out IntPtr ppv);
@@ -47,15 +50,20 @@ internal sealed unsafe class TaskbarProgress : IDisposable
             TaskbarState.Paused => TBPF_ERROR,
             _ => TBPF_NOPROGRESS,
         };
+        ulong value = flag == TBPF_NOPROGRESS ? 0 : (ulong)Math.Round(Math.Clamp(fraction, 0, 1) * Scale);
+        if (hwnd == _lastHwnd && flag == _lastFlag && value == _lastValue) return; // nada cambió: sin llamada COM
+        // Primero el valor y luego el estado, para que el color elegido sea el último en aplicarse.
+        if (flag != TBPF_NOPROGRESS) setValue(_ptr, hwnd, value, Scale);
         setState(_ptr, hwnd, flag);
-        if (flag != TBPF_NOPROGRESS)
-            setValue(_ptr, hwnd, (ulong)(Math.Clamp(fraction, 0, 1) * Scale), Scale);
+        (_lastHwnd, _lastFlag, _lastValue) = (hwnd, flag, value);
     }
 
     /// <summary>Tras reiniciarse Explorer hay que pedir de nuevo la interfaz.</summary>
     public void Reset()
     {
         Dispose();
+        _lastFlag = -1;
+        _lastValue = ulong.MaxValue;
         Init();
     }
 

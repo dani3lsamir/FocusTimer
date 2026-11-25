@@ -39,7 +39,6 @@ internal static unsafe class Toast
             using var key = Registry.CurrentUser.CreateSubKey(@"Software\Classes\AppUserModelId\" + AppId);
             key.SetValue("DisplayName", displayName);
             if (iconPath is not null) key.SetValue("IconUri", iconPath);
-            Win32.SetCurrentProcessExplicitAppUserModelID(AppId);
         }
         catch (Exception e) when (e is UnauthorizedAccessException or SecurityException or IOException) { }
     }

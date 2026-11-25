@@ -16,7 +16,7 @@
     <ServerGarbageCollection>false</ServerGarbageCollection>
     <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
     <InvariantGlobalization>true</InvariantGlobalization>
-    <SatelliteResourceLanguages>es</SatelliteResourceLanguages>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
 
     <!-- Publicación: un solo .exe que usa el .NET 10 Desktop Runtime instalado. -->
     <PublishSingleFile>true</PublishSingleFile>
